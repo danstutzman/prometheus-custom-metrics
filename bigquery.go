@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
-	"strings"
+	"time"
 )
 
 var S3_PATH_REGEXP = regexp.MustCompile(
@@ -42,91 +42,114 @@ func NewBigqueryConnection(pemPath, projectId, datasetId string) *BigqueryConnec
 	}
 }
 
-func (conn *BigqueryConnection) createSitesTable() {
-	log.Printf("Creating sites table first...")
-	response, err := conn.service.Tables.Insert(conn.projectId, conn.datasetId,
+func (conn *BigqueryConnection) createVisitsTable() {
+	log.Printf("Creating visits table first...")
+	_, err := conn.service.Tables.Insert(conn.projectId, conn.datasetId,
 		&bigquery.Table{
 			Schema: &bigquery.TableSchema{
 				Fields: []*bigquery.TableFieldSchema{
-					{Name: "site_domain_name", Type: "STRING", Mode: "REQUIRED"},
 					{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
+					{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "c_ip", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_method", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "sc_status", Type: "INTEGER", Mode: "REQUIRED"},
+					{Name: "cs_referer", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "x_host_header", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "time_taken", Type: "FLOAT", Mode: "REQUIRED"},
+					{Name: "x_forwarded_for", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "cs_protocol", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "x_edge_response_result_type", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+					{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "x_edge_result_type", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+					{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
 				},
 			},
 			TableReference: &bigquery.TableReference{
 				DatasetId: conn.datasetId,
 				ProjectId: conn.projectId,
-				TableId:   "sites",
+				TableId:   "visits",
 			},
 		}).Do()
 	if err != nil {
 		panic(err)
 	}
-	_ = response
+
+	log.Printf("Waiting 30 seconds for BigQuery to catch up...")
+	time.Sleep(30 * time.Second)
 }
 
-func (conn *BigqueryConnection) QueryLastS3Paths() []string {
-	log.Printf("Querying last S3 paths, query 1/2...")
-	sql1 := fmt.Sprintf(`SELECT site_domain_name, max(s3_path) AS last_s3_path
-		FROM %s.sites
-		GROUP BY site_domain_name`, conn.datasetId)
-	response1, err := conn.service.Jobs.Query(conn.projectId,
-		&bigquery.QueryRequest{Query: sql1}).Do()
+func dashToBlank(s string) string {
+	if s == "-" {
+		return ""
+	} else {
+		return s
+	}
+}
+
+func (conn *BigqueryConnection) UploadVisits(s3Path string,
+	visits []map[string]string) {
+
+	log.Printf("Inserting rows for %s...", s3Path)
+
+	rows := make([]*bigquery.TableDataInsertAllRequestRows, 0)
+	for _, visit := range visits {
+		row := &bigquery.TableDataInsertAllRequestRows{
+			InsertId: s3Path + "-1-" + visit["x-edge-request-id"],
+			Json: map[string]bigquery.JsonValue{
+				// don't include x-edge-request-id
+				"s3_path":                     s3Path,
+				"datetime":                    visit["date"] + "T" + visit["time"],
+				"x_edge_location":             visit["x-edge-location"],
+				"c_ip":                        visit["c-ip"],
+				"cs_method":                   visit["cs-method"],
+				"sc_status":                   visit["sc-status"],
+				"cs_referer":                  dashToBlank(visit["cs(Referer)"]),
+				"x_host_header":               visit["x-host-header"],
+				"time_taken":                  visit["time-taken"],
+				"x_forwarded_for":             dashToBlank(visit["x-forwarded-for"]),
+				"cs_protocol":                 visit["cs-protocol"],
+				"cs_uri_stem":                 visit["cs-uri-stem"],
+				"cs_user_agent":               visit["cs(User-Agent)"],
+				"cs_uri_query":                dashToBlank(visit["cs-uri-query"]),
+				"x_edge_response_result_type": visit["x-edge-response-result-type"],
+				"sc_bytes":                    visit["sc-bytes"],
+				"cs_host":                     visit["cs(Host)"],
+				"cs_cookie":                   dashToBlank(visit["cs(Cookie)"]),
+				"x_edge_result_type":          visit["x-edge-result-type"],
+				"cs_bytes":                    visit["cs-bytes"],
+				"ssl_protocol":                dashToBlank(visit["ssl-protocol"]),
+				"ssl_cipher":                  dashToBlank(visit["ssl-cipher"]),
+			},
+		}
+		rows = append(rows, row)
+	}
+
+	_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
+		"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
 	if err != nil {
-		if err.Error() == "googleapi: Error 404: Not found: Table speech-danstutzman:cloudfront_logs.sites, notFound" {
-			conn.createSitesTable()
-			response1, err = conn.service.Jobs.Query(conn.projectId,
-				&bigquery.QueryRequest{Query: sql1}).Do()
+		log.Println(err)
+		if err.Error() == fmt.Sprintf(
+			"googleapi: Error 404: Not found: Table %s:%s.visits, notFound",
+			conn.projectId, conn.datasetId) {
+
+			conn.createVisitsTable()
+
+			// Now retry the insert
+			_, err = conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
+				"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
 			if err != nil {
 				panic(err)
 			}
 		} else {
 			panic(err)
 		}
-	}
-
-	lastS3Paths := []string{}
-	log.Printf("Querying last S3 paths, query 2/2...")
-	if response1.TotalRows > 0 {
-		likes := []string{}
-		for _, row := range response1.Rows {
-			lastS3Path := row.F[1].V.(string)
-			groups := S3_PATH_REGEXP.FindStringSubmatch(lastS3Path)
-			if groups == nil {
-				panic(fmt.Errorf("s3_path value of '%s' didn't match regexp '%s'",
-					lastS3Path, S3_PATH_REGEXP))
-			}
-			like := fmt.Sprintf("'%s.%s-%s-%s-%s.%%'",
-				groups[1], groups[2], groups[3], groups[4])
-			likes = append(likes, like)
-		}
-		sql2 := fmt.Sprintf(`SELECT s3_path
-			FROM %s.sites
-			WHERE last_s3_path LIKE %s`, conn.datasetId, strings.Join(likes, " OR "))
-		response2, err := conn.service.Jobs.Query(conn.projectId,
-			&bigquery.QueryRequest{Query: sql2}).Do()
-		if err != nil {
-			panic(err)
-		}
-		for _, row := range response2.Rows {
-			s3Path := row.F[1].V.(string)
-			lastS3Paths = append(lastS3Paths, s3Path)
-		}
-	}
-	return lastS3Paths
-}
-
-func (conn *BigqueryConnection) TestQuery() {
-	log.Printf("Querying BigQuery...")
-	sql := `SELECT COUNT(*)
-	  FROM cloudfront_logs.cloudfront_logs
-		LIMIT 1000`
-	response, err := conn.service.Jobs.Query(conn.projectId,
-		&bigquery.QueryRequest{Query: sql}).Do()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, row := range response.Rows {
-		log.Printf("Row: %v", row.F[0].V.(string))
 	}
 }

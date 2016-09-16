@@ -29,6 +29,10 @@ tee policy.json <<EOF
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
       "Resource": "arn:aws:s3:::$BUCKET_NAME"
+    }, {
+      "Effect": "Allow",
+      "Action": ["s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
     }
   ]
 }
