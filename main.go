@@ -2,15 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	bigquery "google.golang.org/api/bigquery/v2"
-	"io/ioutil"
 	"log"
 )
 
@@ -57,68 +48,6 @@ func parseArgsOrFatal() Args {
 		s3BucketName:    *s3BucketName,
 		gcloudPemPath:   *gcloudPemPath,
 		gcloudProjectId: *gcloudProjectId,
-	}
-}
-
-func testS3(credsPath, region, bucketName string) {
-	log.Printf("Creating AWS session...")
-	session, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Credentials: credentials.NewSharedCredentials(credsPath, ""),
-			Region:      aws.String(region),
-		},
-	})
-	if err != nil {
-		panic(fmt.Errorf("Couldn't create AWS session: %s", err))
-	}
-	s3Service := s3.New(session)
-
-	log.Printf("Listing objects in s3://%s...", bucketName)
-	resp, err := s3Service.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(bucketName),
-		//		ContinuationToken: aws.String("Token"),
-		//		Delimiter:         aws.String("Delimiter"),
-		//		EncodingType:      aws.String("EncodingType"),
-		//		FetchOwner:        aws.Bool(true),
-		//		MaxKeys:           aws.Int64(1),
-		//		Prefix:            aws.String("Prefix"),
-		//		StartAfter:        aws.String("StartAfter"),
-	})
-	if err != nil {
-		log.Fatal(fmt.Errorf("Couldn't ListObjectsV2: %s", err))
-	}
-	fmt.Println(resp)
-}
-
-func testGcloud(pemPath, projectId string) {
-	pemKeyBytes, err := ioutil.ReadFile(pemPath)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("Obtaining OAuth2 token...")
-	token, err := google.JWTConfigFromJSON(pemKeyBytes, bigquery.BigqueryScope)
-	client := token.Client(oauth2.NoContext)
-
-	service, err := bigquery.New(client)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("Querying BigQuery...")
-	sql := `SELECT COUNT(*)
-	  FROM cloudfront_logs.cloudfront_logs
-		LIMIT 1000`
-	response, err := service.Jobs.Query(projectId,
-		&bigquery.QueryRequest{
-			Query: sql,
-		}).Do()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, row := range response.Rows {
-		log.Printf("Row: %v", row.F[0].V.(string))
 	}
 }
 
