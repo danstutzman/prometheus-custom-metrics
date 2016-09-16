@@ -54,6 +54,11 @@ func parseArgsOrFatal() Args {
 func main() {
 	args := parseArgsOrFatal()
 
+	bigqueryConnection := NewBigqueryConnection(args.gcloudPemPath,
+		args.gcloudProjectId, "cloudfront_logs")
+	lastS3Paths := bigqueryConnection.QueryLastS3Paths()
+	log.Printf("lastS3Paths: %v", lastS3Paths)
+	bigqueryConnection.TestQuery()
+
 	testS3(args.s3CredsPath, args.s3Region, args.s3BucketName)
-	testGcloud(args.gcloudPemPath, args.gcloudProjectId)
 }
