@@ -62,7 +62,7 @@ func (conn *BigqueryConnection) createVisitsTable() {
 					{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
 					{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
 					{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "x_edge_response_result_type", Type: "STRING", Mode: "REQUIRED"},
+					{Name: "x_edge_response_result_type", Type: "STRING", Mode: "NULLABLE"},
 					{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
 					{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
 					{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
@@ -70,6 +70,7 @@ func (conn *BigqueryConnection) createVisitsTable() {
 					{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
 					{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
 					{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
+					{Name: "cs_protocol_version", Type: "STRING", Mode: "NULLABLE"},
 				},
 			},
 			TableReference: &bigquery.TableReference{
@@ -86,9 +87,11 @@ func (conn *BigqueryConnection) createVisitsTable() {
 	time.Sleep(30 * time.Second)
 }
 
-func dashToBlank(s string) string {
+func maybeNull(s string) bigquery.JsonValue {
 	if s == "-" {
-		return ""
+		return nil
+	} else if s == "" {
+		return nil
 	} else {
 		return s
 	}
@@ -111,22 +114,23 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 				"c_ip":                        visit["c-ip"],
 				"cs_method":                   visit["cs-method"],
 				"sc_status":                   visit["sc-status"],
-				"cs_referer":                  dashToBlank(visit["cs(Referer)"]),
+				"cs_referer":                  maybeNull(visit["cs(Referer)"]),
 				"x_host_header":               visit["x-host-header"],
 				"time_taken":                  visit["time-taken"],
-				"x_forwarded_for":             dashToBlank(visit["x-forwarded-for"]),
+				"x_forwarded_for":             maybeNull(visit["x-forwarded-for"]),
 				"cs_protocol":                 visit["cs-protocol"],
 				"cs_uri_stem":                 visit["cs-uri-stem"],
 				"cs_user_agent":               visit["cs(User-Agent)"],
-				"cs_uri_query":                dashToBlank(visit["cs-uri-query"]),
-				"x_edge_response_result_type": visit["x-edge-response-result-type"],
+				"cs_uri_query":                maybeNull(visit["cs-uri-query"]),
+				"x_edge_response_result_type": maybeNull(visit["x-edge-response-result-type"]),
 				"sc_bytes":                    visit["sc-bytes"],
 				"cs_host":                     visit["cs(Host)"],
-				"cs_cookie":                   dashToBlank(visit["cs(Cookie)"]),
+				"cs_cookie":                   maybeNull(visit["cs(Cookie)"]),
 				"x_edge_result_type":          visit["x-edge-result-type"],
 				"cs_bytes":                    visit["cs-bytes"],
-				"ssl_protocol":                dashToBlank(visit["ssl-protocol"]),
-				"ssl_cipher":                  dashToBlank(visit["ssl-cipher"]),
+				"ssl_protocol":                maybeNull(visit["ssl-protocol"]),
+				"ssl_cipher":                  maybeNull(visit["ssl-cipher"]),
+				"cs_protocol_version":         maybeNull(visit["cs-protocol-version"]),
 			},
 		}
 		rows = append(rows, row)
