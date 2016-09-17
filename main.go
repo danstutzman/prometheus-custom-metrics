@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"github.com/prometheus/client_golang/prometheus"
 	"log"
+	"net/http"
 )
 
 type Args struct {
@@ -11,6 +13,7 @@ type Args struct {
 	s3BucketName    string
 	gcloudPemPath   string
 	gcloudProjectId string
+	portNum         int
 }
 
 func parseArgsOrFatal() Args {
@@ -24,6 +27,7 @@ func parseArgsOrFatal() Args {
 		"path to Google credentials in JSON format, e.g. ./Speech-ba6281533dc8.json")
 	gcloudProjectId := flag.String("gcloud_project_id", "",
 		"Project number or project ID")
+	portNum := flag.Int("port_num", 0, "Port number to run web server on")
 	flag.Parse()
 
 	if *s3CredsPath == "" {
@@ -41,6 +45,9 @@ func parseArgsOrFatal() Args {
 	if *gcloudProjectId == "" {
 		log.Fatal("Missing --gcloud_project_id")
 	}
+	if *portNum == 0 {
+		log.Fatal("Missing --port_num")
+	}
 
 	return Args{
 		s3CredsPath:     *s3CredsPath,
@@ -48,19 +55,19 @@ func parseArgsOrFatal() Args {
 		s3BucketName:    *s3BucketName,
 		gcloudPemPath:   *gcloudPemPath,
 		gcloudProjectId: *gcloudProjectId,
+		portNum:         *portNum,
 	}
 }
 
 func main() {
 	args := parseArgsOrFatal()
-
+	s3 := NewS3Connection(args.s3CredsPath, args.s3Region, args.s3BucketName)
 	bigquery := NewBigqueryConnection(args.gcloudPemPath,
 		args.gcloudProjectId, "cloudfront_logs")
+	collector := NewCloudfrontCollector(s3, bigquery)
+	collector.InitFromBigqueryAndS3()
 
-	s3 := NewS3Connection(args.s3CredsPath, args.s3Region, args.s3BucketName)
-	for _, s3Path := range s3.ListPaths() {
-		visits := s3.DownloadVisitsForPath(s3Path)
-		bigquery.UploadVisits(s3Path, visits)
-		s3.DeletePath(s3Path)
-	}
+	prometheus.MustRegister(collector)
+	http.Handle("/metrics", prometheus.Handler())
+	http.ListenAndServe(string(args.portNum), nil)
 }

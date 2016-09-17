@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -18,6 +19,14 @@ type BigqueryConnection struct {
 	projectId string
 	datasetId string
 	service   *bigquery.Service
+}
+
+func atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		panic(err)
+	}
+	return i
 }
 
 func NewBigqueryConnection(pemPath, projectId, datasetId string) *BigqueryConnection {
@@ -156,4 +165,24 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 			panic(err)
 		}
 	}
+}
+
+func (conn *BigqueryConnection) QuerySiteNameToNumVisits() map[string]int {
+	log.Printf("Querying site name to num visits...")
+	sql := fmt.Sprintf(`SELECT x_host_header AS site_name, COUNT(*) AS num_visits
+        FROM %s.visits
+        GROUP BY site_name`, conn.datasetId)
+	response, err := conn.service.Jobs.Query(conn.projectId,
+		&bigquery.QueryRequest{Query: sql}).Do()
+	if err != nil {
+		panic(err)
+	}
+
+	siteNameToNumVisits := map[string]int{}
+	for _, row := range response.Rows {
+		siteName := row.F[0].V.(string)
+		numVisits := atoi(row.F[1].V.(string))
+		siteNameToNumVisits[siteName] = numVisits
+	}
+	return siteNameToNumVisits
 }

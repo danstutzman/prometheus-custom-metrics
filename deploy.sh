@@ -18,23 +18,26 @@ scp -C -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -P 2222 \
 tugboat ssh -n monitoring <<EOF
 set -ex
 
-cd /root/prometheus-cloudfront-logs-exporter
-mv ./prometheus-cloudfront-logs-exporter.new ./prometheus-cloudfront-logs-exporter
-./prometheus-cloudfront-logs-exporter \
-  --s3_creds_path ./s3.creds.ini \
-  --s3_region us-east-1 \
-  --s3_bucket_name cloudfront-logs-danstutzman \
-  --gcloud_pem_path ./Speech-ba6281533dc8.json \
-  --gcloud_project_id speech-danstutzman
+echo "- targets: [ 'localhost:9102' ]" \
+    >/root/prometheus_configs/prometheus-cloudfront-logs-exporter.yml
+curl -X POST http://localhost:9090/-/reload
 
-#tee /etc/init/prometheus-piwik-exporter.conf <<EOF2
-#start on startup
-#script
-#  /root/prometheus-piwik-exporter -port :9101
-#end script
-#EOF2
-#
-#sudo service prometheus-piwik-exporter stop || true
-#mv /root/prometheus-piwik-exporter.new /root/prometheus-piwik-exporter
-#sudo service prometheus-piwik-exporter start
+tee /etc/init/prometheus-cloudfront-logs-exporter.conf <<EOF2
+chdir /root/prometheus-cloudfront-logs-exporter
+start on startup
+script
+  ./prometheus-cloudfront-logs-exporter \
+    --s3_creds_path ./s3.creds.ini \
+    --s3_region us-east-1 \
+    --s3_bucket_name cloudfront-logs-danstutzman \
+    --gcloud_pem_path ./Speech-ba6281533dc8.json \
+    --gcloud_project_id speech-danstutzman \
+    --port_num 9102
+end script
+EOF2
+
+sudo service prometheus-cloudfront-logs-exporter stop || true
+mv /root/prometheus-cloudfront-logs-exporter/prometheus-cloudfront-logs-exporter.new \
+  /root/prometheus-cloudfront-logs-exporter/prometheus-cloudfront-logs-exporter
+sudo service prometheus-cloudfront-logs-exporter start
 EOF
