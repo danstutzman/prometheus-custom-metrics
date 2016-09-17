@@ -21,6 +21,11 @@ type BigqueryConnection struct {
 	service   *bigquery.Service
 }
 
+type SiteNameStatus struct {
+	SiteName string
+	Status   string
+}
+
 func atoi(s string) int {
 	i, err := strconv.Atoi(s)
 	if err != nil {
@@ -167,22 +172,39 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 	}
 }
 
-func (conn *BigqueryConnection) QuerySiteNameToNumVisits() map[string]int {
-	log.Printf("Querying site name to num visits...")
-	sql := fmt.Sprintf(`SELECT x_host_header AS site_name, COUNT(*) AS num_visits
+func RollUpExactStatus(exactStatus int) string {
+	switch {
+	case exactStatus == 200:
+		return "200"
+	case exactStatus == 404:
+		return "200"
+	case exactStatus >= 500 && exactStatus <= 599:
+		return "5xx"
+	default:
+		return "other"
+	}
+}
+
+func (conn *BigqueryConnection) QuerySiteNameStatusToNumVisits() map[SiteNameStatus]int {
+	log.Printf("Querying site name * status to num visits...")
+	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
+	        sc_status AS exact_status,
+					COUNT(*) AS num_visits,
         FROM %s.visits
-        GROUP BY site_name`, conn.datasetId)
+        GROUP BY site_name, exact_status`, conn.datasetId)
 	response, err := conn.service.Jobs.Query(conn.projectId,
 		&bigquery.QueryRequest{Query: sql}).Do()
 	if err != nil {
 		panic(err)
 	}
 
-	siteNameToNumVisits := map[string]int{}
+	siteNameStatusToNumVisits := map[SiteNameStatus]int{}
 	for _, row := range response.Rows {
 		siteName := row.F[0].V.(string)
-		numVisits := atoi(row.F[1].V.(string))
-		siteNameToNumVisits[siteName] = numVisits
+		exactStatus := atoi(row.F[1].V.(string))
+		numVisits := atoi(row.F[2].V.(string))
+		status := RollUpExactStatus(exactStatus)
+		siteNameStatusToNumVisits[SiteNameStatus{siteName, status}] += numVisits
 	}
-	return siteNameToNumVisits
+	return siteNameStatusToNumVisits
 }
