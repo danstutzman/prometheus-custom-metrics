@@ -34,6 +34,14 @@ func atoi(s string) int {
 	return i
 }
 
+func parseFloat64(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		panic(err)
+	}
+	return f
+}
+
 func NewBigqueryConnection(pemPath, projectId, datasetId string) *BigqueryConnection {
 	pemKeyBytes, err := ioutil.ReadFile(pemPath)
 	if err != nil {
@@ -207,4 +215,32 @@ func (conn *BigqueryConnection) QuerySiteNameStatusToNumVisits() map[SiteNameSta
 		siteNameStatusToNumVisits[SiteNameStatus{siteName, status}] += numVisits
 	}
 	return siteNameStatusToNumVisits
+}
+
+// Returns _sum and _count
+func (conn *BigqueryConnection) QuerySiteNameToRequestSeconds() (map[string]float64,
+	map[string]int) {
+
+	log.Printf("Querying site name to request seconds...")
+	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
+	        SUM(time_taken) AS sum_time_taken,
+					COUNT(*) AS num_visits
+        FROM %s.visits
+        GROUP BY site_name`, conn.datasetId)
+	response, err := conn.service.Jobs.Query(conn.projectId,
+		&bigquery.QueryRequest{Query: sql}).Do()
+	if err != nil {
+		panic(err)
+	}
+
+	siteNameToRequestSecondsSum := map[string]float64{}
+	siteNameToRequestSecondsCount := map[string]int{}
+	for _, row := range response.Rows {
+		siteName := row.F[0].V.(string)
+		sumTimeTaken := parseFloat64(row.F[1].V.(string))
+		numVisits := atoi(row.F[2].V.(string))
+		siteNameToRequestSecondsSum[siteName] = sumTimeTaken
+		siteNameToRequestSecondsCount[siteName] = numVisits
+	}
+	return siteNameToRequestSecondsSum, siteNameToRequestSecondsCount
 }
