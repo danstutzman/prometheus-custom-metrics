@@ -18,10 +18,6 @@ scp -C -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -P 2222 \
 tugboat ssh -n monitoring <<EOF
 set -ex
 
-echo "- targets: [ 'localhost:9102' ]" \
-    >/root/prometheus_configs/prometheus-cloudfront-logs-exporter.yml
-curl -X POST http://localhost:9090/-/reload
-
 tee /etc/init/prometheus-cloudfront-logs-exporter.conf <<EOF2
 chdir /root/prometheus-cloudfront-logs-exporter
 start on startup
