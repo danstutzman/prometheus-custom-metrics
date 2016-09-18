@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"net/http"
@@ -69,5 +70,8 @@ func main() {
 
 	prometheus.MustRegister(collector)
 	http.Handle("/metrics", prometheus.Handler())
-	http.ListenAndServe(string(args.portNum), nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", args.portNum), nil)
+	if err != nil {
+		panic(err)
+	}
 }
