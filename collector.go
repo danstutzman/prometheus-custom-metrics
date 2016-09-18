@@ -25,22 +25,30 @@ func (collector *CloudfrontCollector) InitFromBigqueryAndS3() {
 }
 
 func (collector *CloudfrontCollector) syncNewCloudfrontLogsToBigquery() {
+	sem := make(chan bool, 5)
 	for _, s3Path := range collector.s3.ListPaths() {
-		visits := collector.s3.DownloadVisitsForPath(s3Path)
-		for _, visit := range visits {
-			siteName := visit["x-host-header"]
-			siteNameStatus := SiteNameStatus{
-				siteName,
-				RollUpExactStatus(atoi(visit["sc-status"])),
-			}
-			collector.siteNameStatusToNumVisits[siteNameStatus] += 1
+		sem <- true
+		go func(s3Path string) {
+			visits := collector.s3.DownloadVisitsForPath(s3Path)
+			for _, visit := range visits {
+				siteName := visit["x-host-header"]
+				siteNameStatus := SiteNameStatus{
+					siteName,
+					RollUpExactStatus(atoi(visit["sc-status"])),
+				}
+				collector.siteNameStatusToNumVisits[siteNameStatus] += 1
 
-			collector.siteNameToRequestSecondsSum[siteName] +=
-				parseFloat64(visit["time-taken"])
-			collector.siteNameToRequestSecondsCount[siteName] += 1
-		}
-		collector.bigquery.UploadVisits(s3Path, visits)
-		collector.s3.DeletePath(s3Path)
+				collector.siteNameToRequestSecondsSum[siteName] +=
+					parseFloat64(visit["time-taken"])
+				collector.siteNameToRequestSecondsCount[siteName] += 1
+			}
+			collector.bigquery.UploadVisits(s3Path, visits)
+			collector.s3.DeletePath(s3Path)
+			<-sem
+		}(s3Path)
+	}
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
 	}
 }
 
