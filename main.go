@@ -60,18 +60,23 @@ func parseArgsOrFatal() Args {
 	}
 }
 
+func serveMetrics(portNum int) {
+	http.Handle("/metrics", prometheus.Handler())
+	err := http.ListenAndServe(fmt.Sprintf(":%d", portNum), nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	args := parseArgsOrFatal()
+
+	go serveMetrics(args.portNum)
+
 	s3 := NewS3Connection(args.s3CredsPath, args.s3Region, args.s3BucketName)
 	bigquery := NewBigqueryConnection(args.gcloudPemPath,
 		args.gcloudProjectId, "cloudfront_logs")
 	collector := NewCloudfrontCollector(s3, bigquery)
 	collector.InitFromBigqueryAndS3()
-
 	prometheus.MustRegister(collector)
-	http.Handle("/metrics", prometheus.Handler())
-	err := http.ListenAndServe(fmt.Sprintf(":%d", args.portNum), nil)
-	if err != nil {
-		panic(err)
-	}
 }
