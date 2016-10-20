@@ -1,5 +1,4 @@
-/Speech-ba6281533dc8.json
-/prometheus-cloudfront-logs-exporter.new
-/s3.user.json
-/s3.accesskey.json
-/s3.creds.ini
+/conf/Speech-ba6281533dc8.json
+/conf/s3.user.json
+/conf/s3.accesskey.json
+/conf/s3.creds.ini
