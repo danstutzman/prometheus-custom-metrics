@@ -1,4 +1,4 @@
-package main
+package cloudfront_logs
 
 import (
 	"github.com/prometheus/client_golang/prometheus"

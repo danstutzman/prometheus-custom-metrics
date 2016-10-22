@@ -1,4 +1,4 @@
-package main
+package cloudfront_logs
 
 import (
 	"bufio"
