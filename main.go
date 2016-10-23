@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/danielstutzman/prometheus-cloudfront-logs-exporter/cloudfront_logs"
-	"github.com/danielstutzman/prometheus-cloudfront-logs-exporter/json_value"
+	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
+	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"net/http"

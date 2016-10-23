@@ -1,8 +1,8 @@
 #!/bin/bash -ex
-cd $GOPATH/src/github.com/danielstutzman/prometheus-cloudfront-logs-exporter
+cd $GOPATH/src/github.com/danielstutzman/prometheus-custom-metrics
 
 go build -i
-rm prometheus-cloudfront-logs-exporter
+rm prometheus-custom-metrics
 go vet .
 
 ssh -p 2222 root@monitoring.danstutzman.com <<"EOF"
@@ -16,23 +16,23 @@ if [ ! -e $GOROOT ]; then
 fi
 GOPATH=/root/gopath
 mkdir -p $GOPATH
-mkdir -p $GOPATH/src/github.com/danielstutzman/prometheus-cloudfront-logs-exporter
+mkdir -p $GOPATH/src/github.com/danielstutzman/prometheus-custom-metrics
 EOF
-time rsync -a -e "ssh -C -p 2222 -o StrictHostKeyChecking=no" -r . root@monitoring.danstutzman.com:/root/gopath/src/github.com/danielstutzman/prometheus-cloudfront-logs-exporter --include='*.go' --include='s3.creds.ini' --include='Speech-ba6281533dc8.json' --include='*/' --exclude='*' --prune-empty-dirs
+time rsync -a -e "ssh -C -p 2222 -o StrictHostKeyChecking=no" -r . root@monitoring.danstutzman.com:/root/gopath/src/github.com/danielstutzman/prometheus-custom-metrics --include='*.go' --include='s3.creds.ini' --include='Speech-ba6281533dc8.json' --include='*/' --exclude='*' --prune-empty-dirs
 ssh -p 2222 root@monitoring.danstutzman.com <<"EOF"
 set -ex
 GOROOT=/root/go1.7.3.linux-amd64
 GOPATH=/root/gopath
-cd $GOPATH/src/github.com/danielstutzman/prometheus-cloudfront-logs-exporter
+cd $GOPATH/src/github.com/danielstutzman/prometheus-custom-metrics
 time GOPATH=$GOPATH GOROOT=$GOROOT $GOROOT/bin/go build -i
 
-tee /etc/init/prometheus-cloudfront-logs-exporter.conf <<EOF2
-chdir /root/prometheus-cloudfront-logs-exporter
+tee /etc/init/prometheus-custom-metrics.conf <<EOF2
+chdir /root/prometheus-custom-metrics
 start on startup
 respawn
 respawn limit 2 60
 script
-  ./prometheus-cloudfront-logs-exporter '{"PortNum": 9102,
+  ./prometheus-custom-metrics '{"PortNum": 9102,
     "CloudfrontLogs": {
       "S3CredsPath": "conf/s3.creds.ini",
       "S3Region": "us-east-1",
@@ -44,9 +44,9 @@ script
 end script
 EOF2
 
-sudo service prometheus-cloudfront-logs-exporter stop || true
-mkdir -p /root/prometheus-cloudfront-logs-exporter
-cp -rv ./prometheus-cloudfront-logs-exporter ./conf /root/prometheus-cloudfront-logs-exporter
-sudo service prometheus-cloudfront-logs-exporter start
+sudo service prometheus-custom-metrics stop || true
+mkdir -p /root/prometheus-custom-metrics
+cp -rv ./prometheus-custom-metrics ./conf /root/prometheus-custom-metrics
+sudo service prometheus-custom-metrics start
 curl -f http://localhost:9102/metrics >/dev/null
 EOF

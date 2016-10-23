@@ -1,7 +1,7 @@
 package cloudfront_logs
 
 import (
-	"github.com/danielstutzman/prometheus-cloudfront-logs-exporter/json_value"
+	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
 )
 
 type Options struct {
