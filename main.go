@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 )
 
 type Options struct {
@@ -73,4 +74,6 @@ func main() {
 	if options.CloudfrontLogs != nil {
 		cloudfront_logs.Main(*options.CloudfrontLogs)
 	}
+
+	runtime.Goexit() // don't exit main; keep running web server
 }
