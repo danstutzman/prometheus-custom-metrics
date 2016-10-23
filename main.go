@@ -6,6 +6,7 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
 	"github.com/danielstutzman/prometheus-custom-metrics/piwik_exporter"
+	"github.com/danielstutzman/prometheus-custom-metrics/url_to_ping"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"net/http"
@@ -17,13 +18,15 @@ type Options struct {
 	PortNum        int
 	CloudfrontLogs *cloudfront_logs.Options
 	PiwikExporter  bool
+	UrlToPing      string
 }
 
 func usagef(format string, args ...interface{}) {
 	log.Printf(`Usage: %s '{"PortNum":INT,  Port number to run web server on
   	"CloudfrontLogs": %s,
-		"PiwikExporter": %s
-	}`, os.Args[0], cloudfront_logs.Usage(), piwik_exporter.Usage())
+		"PiwikExporter": %s,
+		"UrlToPing": %s
+	}`, os.Args[0], cloudfront_logs.Usage(), piwik_exporter.Usage(), url_to_ping.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -40,6 +43,8 @@ func handleOptions(optionsMap map[string]interface{}) Options {
 				"Options.CloudfrontLogs", usagef)
 		case "PiwikExporter":
 			options.PiwikExporter = json_value.ToBool(value, "Options.PiwikExporter", usagef)
+		case "UrlToPing":
+			options.UrlToPing = json_value.ToString(value, "Options.UrlToPing", usagef)
 		default:
 			usagef("Unknown key \"%s\" in options", key)
 		}
@@ -81,6 +86,9 @@ func main() {
 	}
 	if options.PiwikExporter {
 		piwik_exporter.Main()
+	}
+	if options.UrlToPing != "" {
+		url_to_ping.Main(options.UrlToPing)
 	}
 
 	runtime.Goexit() // don't exit main; keep running web server

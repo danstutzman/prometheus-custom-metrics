@@ -40,7 +40,8 @@ script
       "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
       "GcloudProjectId": "speech-danstutzman"
     },
-    "PiwikExporter": true
+    "PiwikExporter": true,
+    "UrlToPing": "https://nosnch.in/480f8a1fa3"
   }'
 end script
 EOF2
