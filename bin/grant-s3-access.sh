@@ -51,4 +51,6 @@ rm conf/policy.json
 # How to delete the user:
 #   aws iam list-user-policies --user-name prometheus-custom-metrics
 #   aws iam delete-user-policy --user-name prometheus-custom-metrics --policy-name can-read-cloudfront-logs
+#   aws iam list-access-keys --user-name prometheus-custom-metrics
+#   aws iam delete-access-key --user-name prometheus-custom-metrics --access-key-id AKIAJ2OHSRS75K464FUA
 #   aws iam delete-user --user-name prometheus-custom-metrics
