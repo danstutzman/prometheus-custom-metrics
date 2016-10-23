@@ -28,3 +28,13 @@ func ToMap(jsonValue interface{}, path string, usagef func(string, ...interface{
 	}
 	return m
 }
+
+func ToBool(jsonValue interface{}, path string,
+	usagef func(string, ...interface{})) bool {
+
+	b, ok := jsonValue.(bool)
+	if !ok {
+		usagef("%s must be string", path)
+	}
+	return b
+}

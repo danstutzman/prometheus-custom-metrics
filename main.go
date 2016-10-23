@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
+	"github.com/danielstutzman/prometheus-custom-metrics/piwik_exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
 	"net/http"
@@ -15,12 +16,14 @@ import (
 type Options struct {
 	PortNum        int
 	CloudfrontLogs *cloudfront_logs.Options
+	PiwikExporter  bool
 }
 
 func usagef(format string, args ...interface{}) {
 	log.Printf(`Usage: %s '{"PortNum":INT,  Port number to run web server on
-  	"CloudfrontLogs": %s
-	}`, os.Args[0], cloudfront_logs.Usage())
+  	"CloudfrontLogs": %s,
+		"PiwikExporter": %s
+	}`, os.Args[0], cloudfront_logs.Usage(), piwik_exporter.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -35,6 +38,8 @@ func handleOptions(optionsMap map[string]interface{}) Options {
 			options.CloudfrontLogs = cloudfront_logs.HandleOptions(
 				json_value.ToMap(value, "Options.CloudfrontLogs", usagef),
 				"Options.CloudfrontLogs", usagef)
+		case "PiwikExporter":
+			options.PiwikExporter = json_value.ToBool(value, "Options.PiwikExporter", usagef)
 		default:
 			usagef("Unknown key \"%s\" in options", key)
 		}
@@ -73,6 +78,9 @@ func main() {
 
 	if options.CloudfrontLogs != nil {
 		cloudfront_logs.Main(*options.CloudfrontLogs)
+	}
+	if options.PiwikExporter {
+		piwik_exporter.Main()
 	}
 
 	runtime.Goexit() // don't exit main; keep running web server

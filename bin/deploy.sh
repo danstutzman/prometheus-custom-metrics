@@ -39,7 +39,8 @@ script
       "S3BucketName": "cloudfront-logs-danstutzman",
       "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
       "GcloudProjectId": "speech-danstutzman"
-    }
+    },
+    "PiwikExporter": true
   }'
 end script
 EOF2
