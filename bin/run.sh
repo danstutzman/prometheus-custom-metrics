@@ -9,6 +9,7 @@ go run main.go '{"PortNum": 3000,
     "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
     "GcloudProjectId": "speech-danstutzman"
   },
+  "MemoryUsage": true,
   "PiwikExporter": false,
   "UrlToPing": ""
 }'
