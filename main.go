@@ -87,8 +87,6 @@ func main() {
 
 	go serveMetrics(options.PortNum)
 
-	if options.CloudfrontLogs != nil {
-		cloudfront_logs.Main(*options.CloudfrontLogs)
 	if options.MemoryUsage {
 		memory_usage.Main()
 	}
@@ -97,6 +95,9 @@ func main() {
 	}
 	if options.UrlToPing != "" {
 		url_to_ping.Main(options.UrlToPing)
+	}
+	if options.CloudfrontLogs != nil { // Run last since it's slow
+		cloudfront_logs.Main(*options.CloudfrontLogs)
 	}
 
 	runtime.Goexit() // don't exit main; keep running web server
