@@ -11,5 +11,6 @@ go run main.go '{"PortNum": 3000,
   },
   "MemoryUsage": true,
   "PiwikExporter": false,
+  "SecurityUpdates": false,
   "UrlToPing": ""
 }'

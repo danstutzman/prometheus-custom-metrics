@@ -7,6 +7,7 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
 	"github.com/danielstutzman/prometheus-custom-metrics/memory_usage"
 	"github.com/danielstutzman/prometheus-custom-metrics/piwik_exporter"
+	"github.com/danielstutzman/prometheus-custom-metrics/security_updates"
 	"github.com/danielstutzman/prometheus-custom-metrics/url_to_ping"
 	"github.com/prometheus/client_golang/prometheus"
 	"log"
@@ -16,11 +17,12 @@ import (
 )
 
 type Options struct {
-	PortNum        int
-	CloudfrontLogs *cloudfront_logs.Options
-	MemoryUsage    bool
-	PiwikExporter  bool
-	UrlToPing      string
+	PortNum         int
+	CloudfrontLogs  *cloudfront_logs.Options
+	MemoryUsage     bool
+	PiwikExporter   bool
+	SecurityUpdates bool
+	UrlToPing       string
 }
 
 func usagef(format string, args ...interface{}) {
@@ -28,9 +30,10 @@ func usagef(format string, args ...interface{}) {
   	"CloudfrontLogs": %s,
 		"MemoryUsage": %s,
 		"PiwikExporter": %s,
+		"SecurityUpdates": %s,
 		"UrlToPing": %s
 	}`, os.Args[0], cloudfront_logs.Usage(), memory_usage.Usage(),
-		piwik_exporter.Usage(), url_to_ping.Usage())
+		piwik_exporter.Usage(), security_updates.Usage(), url_to_ping.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -49,6 +52,9 @@ func handleOptions(optionsMap map[string]interface{}) Options {
 			options.MemoryUsage = json_value.ToBool(value, "Options.MemoryUsage", usagef)
 		case "PiwikExporter":
 			options.PiwikExporter = json_value.ToBool(value, "Options.PiwikExporter", usagef)
+		case "SecurityUpdates":
+			options.SecurityUpdates =
+				json_value.ToBool(value, "Options.SecurityUpdates", usagef)
 		case "UrlToPing":
 			options.UrlToPing = json_value.ToString(value, "Options.UrlToPing", usagef)
 		default:
@@ -92,6 +98,9 @@ func main() {
 	}
 	if options.PiwikExporter {
 		piwik_exporter.Main()
+	}
+	if options.SecurityUpdates {
+		security_updates.Main()
 	}
 	if options.UrlToPing != "" {
 		url_to_ping.Main(options.UrlToPing)

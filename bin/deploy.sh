@@ -53,13 +53,16 @@ EOF2
           },
           "MemoryUsage": true,
           "PiwikExporter": true,
+          "SecurityUpdates": true,
           "UrlToPing": "https://nosnch.in/480f8a1fa3"
         }'
         end script
 EOF2
     else
       tee -a /etc/init/prometheus-custom-metrics.conf <<EOF2
-        ./prometheus-custom-metrics '{"PortNum": 9102, "MemoryUsage": true}'
+        ./prometheus-custom-metrics '{"PortNum": 9102,
+          "MemoryUsage": true,
+          "SecurityUpdates": true}'
         end script
 EOF2
     fi
