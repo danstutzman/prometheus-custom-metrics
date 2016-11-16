@@ -2,6 +2,7 @@ package cloudfront_logs
 
 import (
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	bigquery "google.golang.org/api/bigquery/v2"
@@ -158,8 +159,16 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 		rows = append(rows, row)
 	}
 
-	_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
-		"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
+	var err error
+	err = backoff.Retry(func() error {
+		_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
+			"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
+		return err
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		panic(err)
+	}
+
 	if err != nil {
 		log.Println(err)
 		if err.Error() == fmt.Sprintf(
@@ -169,8 +178,11 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 			conn.createVisitsTable()
 
 			// Now retry the insert
-			_, err = conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
-				"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
+			err = backoff.Retry(func() error {
+				_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
+					"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
+				return err
+			}, backoff.NewExponentialBackOff())
 			if err != nil {
 				panic(err)
 			}
@@ -200,8 +212,14 @@ func (conn *BigqueryConnection) QuerySiteNameStatusToNumVisits() map[SiteNameSta
 					COUNT(*) AS num_visits,
         FROM %s.visits
         GROUP BY site_name, exact_status`, conn.datasetId)
-	response, err := conn.service.Jobs.Query(conn.projectId,
-		&bigquery.QueryRequest{Query: sql}).Do()
+
+	var response *bigquery.QueryResponse
+	var err error
+	err = backoff.Retry(func() error {
+		response, err = conn.service.Jobs.Query(conn.projectId,
+			&bigquery.QueryRequest{Query: sql}).Do()
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		panic(err)
 	}
@@ -227,8 +245,14 @@ func (conn *BigqueryConnection) QuerySiteNameToRequestSeconds() (map[string]floa
 					COUNT(*) AS num_visits
         FROM %s.visits
         GROUP BY site_name`, conn.datasetId)
-	response, err := conn.service.Jobs.Query(conn.projectId,
-		&bigquery.QueryRequest{Query: sql}).Do()
+
+	var response *bigquery.QueryResponse
+	var err error
+	err = backoff.Retry(func() error {
+		response, err = conn.service.Jobs.Query(conn.projectId,
+			&bigquery.QueryRequest{Query: sql}).Do()
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		panic(err)
 	}
