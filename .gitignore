@@ -2,3 +2,4 @@
 /conf/s3.user.json
 /conf/s3.accesskey.json
 /conf/s3.creds.ini
+/conf/pop3.creds.json

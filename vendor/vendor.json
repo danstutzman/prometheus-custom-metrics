@@ -183,6 +183,12 @@
 			"revisionTime": "2016-08-04T10:47:26Z"
 		},
 		{
+			"checksumSHA1": "Iclh0GdHj7S5xsHGx0r9EYhhr+c=",
+			"path": "github.com/bytbox/go-pop3",
+			"revision": "3046caf0763e93d409893da161b8ba288caf461f",
+			"revisionTime": "2012-02-01T22:22:08Z"
+		},
+		{
 			"checksumSHA1": "cVyhKIRI2gQrgpn5qrBeAqErmWM=",
 			"path": "github.com/go-ini/ini",
 			"revision": "6e4869b434bd001f6983749881c7ead3545887d8",

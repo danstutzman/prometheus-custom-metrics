@@ -22,7 +22,7 @@ type Options struct {
 	MemoryUsage     bool
 	PiwikExporter   bool
 	SecurityUpdates bool
-	UrlToPing       string
+	UrlToPing       *url_to_ping.Options
 }
 
 func usagef(format string, args ...interface{}) {
@@ -56,7 +56,9 @@ func handleOptions(optionsMap map[string]interface{}) Options {
 			options.SecurityUpdates =
 				json_value.ToBool(value, "Options.SecurityUpdates", usagef)
 		case "UrlToPing":
-			options.UrlToPing = json_value.ToString(value, "Options.UrlToPing", usagef)
+			options.UrlToPing = url_to_ping.HandleOptions(
+				json_value.ToMap(value, "Options.UrlToPing", usagef),
+				"Options.UrlToPing", usagef)
 		default:
 			usagef("Unknown key \"%s\" in options", key)
 		}
@@ -102,8 +104,8 @@ func main() {
 	if options.SecurityUpdates {
 		security_updates.Main()
 	}
-	if options.UrlToPing != "" {
-		url_to_ping.Main(options.UrlToPing)
+	if options.UrlToPing != nil {
+		url_to_ping.Main(*options.UrlToPing)
 	}
 	if options.CloudfrontLogs != nil { // Run last since it's slow
 		cloudfront_logs.Main(*options.CloudfrontLogs)
