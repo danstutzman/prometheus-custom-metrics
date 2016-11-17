@@ -83,6 +83,7 @@ func queryIdsiteToSiteName(db mysql.Conn) map[int]string {
 
 func (collector *PiwikCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.descForPiwikVisits
+	ch <- collector.descForQueryTime
 }
 
 func (collector *PiwikCollector) Collect(ch chan<- prometheus.Metric) {

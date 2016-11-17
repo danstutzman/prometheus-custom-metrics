@@ -54,6 +54,8 @@ func (collector *CloudfrontCollector) syncNewCloudfrontLogsToBigquery() {
 
 func (collector *CloudfrontCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- collector.siteNameStatusToNumVisitsDesc
+	ch <- collector.siteNameToRequestSecondsSumDesc
+	ch <- collector.siteNameToRequestSecondsCountDesc
 }
 
 func (collector *CloudfrontCollector) Collect(ch chan<- prometheus.Metric) {
