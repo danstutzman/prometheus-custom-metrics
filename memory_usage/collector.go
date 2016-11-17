@@ -17,13 +17,13 @@ type RegexpAndGroup struct {
 }
 
 var REGEXP_TO_GROUP_MAPPINGS = []RegexpAndGroup{
+	{regexp.MustCompile(`^[^ ]*apache2`), "apache2"},
 	{regexp.MustCompile(`^[^ ]*blackbox_exporter`), "blackbox_exporter"},
 	{regexp.MustCompile(`^[^ ]*grafana-server`), "grafana-server"},
+	{regexp.MustCompile(`^[^ ]*mysqld`), "mysqld"},
 	{regexp.MustCompile(`^nginx`), "nginx"},
 	{regexp.MustCompile(`^[^ ]*node_exporter`), "node_exporter"},
-	{regexp.MustCompile(`^[^ ]*apache2`), "piwik"},
-	{regexp.MustCompile(`^[^ ]*mysqld`), "piwik"},
-	{regexp.MustCompile(`^php-fpm`), "piwik"},
+	{regexp.MustCompile(`^php-fpm`), "php-fpm"},
 	{regexp.MustCompile(`^[^ ]*postgres`), "postgres"},
 	{regexp.MustCompile(`^[^ ]*postgres_exporter`), "postgres_exporter"},
 	{regexp.MustCompile(`^[^ ]*prometheus`), "prometheus"},
