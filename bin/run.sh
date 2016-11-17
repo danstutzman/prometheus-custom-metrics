@@ -1,11 +1,12 @@
 #!/bin/bash -ex
 cd `dirname $0`/..
 
-go run main.go '{"PortNum": 3000,
-  "MemoryUsage": true,
-  "PiwikExporter": false,
-  "SecurityUpdates": false,
+go install -v
+$GOPATH/bin/prometheus-custom-metrics '{
+  "MemoryUsage": { "MetricsPort": 3000 },
+  "SecurityUpdates": { "MetricsPort": 3000 },
   "UrlToPing": {
+    "MetricsPort": 3001,
     "Pop3CredsJson": "conf/pop3.creds.json",
     "EmailMaxAgeInMins": 60,
     "EmailSubject": "[FIRING:1] FakeAlertToVerifyEndToEnd",

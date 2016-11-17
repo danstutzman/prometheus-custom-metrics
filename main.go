@@ -9,18 +9,19 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/security_updates"
 	"github.com/danielstutzman/prometheus-custom-metrics/url_to_ping"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 )
 
 type Options struct {
-	PortNum         int
 	CloudfrontLogs  *cloudfront_logs.Options
-	MemoryUsage     bool
-	PiwikExporter   bool
-	SecurityUpdates bool
+	MemoryUsage     *memory_usage.Options
+	PiwikExporter   *piwik_exporter.Options
+	SecurityUpdates *security_updates.Options
 	UrlToPing       *url_to_ping.Options
 }
 
@@ -36,9 +37,37 @@ func usagef(format string, args ...interface{}) {
 	log.Fatalf(format, args...)
 }
 
-func serveMetrics(portNum int) {
-	http.Handle("/metrics", prometheus.Handler())
-	err := http.ListenAndServe(fmt.Sprintf(":%d", portNum), nil)
+var collectorsByPort map[int][]prometheus.Collector
+
+func addCollector(collector prometheus.Collector, metricsPort int) {
+	if collectorsByPort == nil {
+		collectorsByPort = map[int][]prometheus.Collector{}
+	}
+
+	_, ok := collectorsByPort[metricsPort]
+	if !ok {
+		collectorsByPort[metricsPort] = []prometheus.Collector{}
+	}
+
+	collectorsByPort[metricsPort] = append(collectorsByPort[metricsPort], collector)
+}
+
+func serveMetrics(collectors []prometheus.Collector, portNum int) {
+	collectorNames := []string{}
+	for _, collector := range collectors {
+		collectorNames = append(collectorNames, fmt.Sprintf("%T", collector))
+	}
+	log.Printf("Starting web server on port %d for %s",
+		portNum, strings.Join(collectorNames, ", "))
+
+	registry := prometheus.NewPedanticRegistry()
+	for _, collector := range collectors {
+		registry.Register(collector)
+	}
+
+	serveMux := http.NewServeMux()
+	serveMux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	err := http.ListenAndServe(fmt.Sprintf(":%d", portNum), serveMux)
 	if err != nil {
 		panic(err)
 	}
@@ -57,22 +86,34 @@ func main() {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
 
-	go serveMetrics(options.PortNum)
-
-	if options.MemoryUsage {
-		memory_usage.Main()
+	if options.CloudfrontLogs != nil {
+		collector := cloudfront_logs.MakeCollector(options.CloudfrontLogs)
+		addCollector(collector, options.CloudfrontLogs.MetricsPort)
+		go collector.InitFromBigqueryAndS3() // run in the background since it's slow
 	}
-	if options.PiwikExporter {
-		piwik_exporter.Main()
+	if options.MemoryUsage != nil {
+		addCollector(
+			memory_usage.MakeCollector(options.MemoryUsage),
+			options.MemoryUsage.MetricsPort)
 	}
-	if options.SecurityUpdates {
-		security_updates.Main()
+	if options.PiwikExporter != nil {
+		addCollector(
+			piwik_exporter.MakeCollector(options.PiwikExporter),
+			options.PiwikExporter.MetricsPort)
+	}
+	if options.SecurityUpdates != nil {
+		addCollector(
+			security_updates.MakeCollector(options.SecurityUpdates),
+			options.SecurityUpdates.MetricsPort)
 	}
 	if options.UrlToPing != nil {
-		url_to_ping.Main(options.UrlToPing)
+		addCollector(
+			url_to_ping.MakeCollector(options.UrlToPing),
+			options.UrlToPing.MetricsPort)
 	}
-	if options.CloudfrontLogs != nil { // Run last since it's slow
-		cloudfront_logs.Main(options.CloudfrontLogs)
+
+	for portNum, collectors := range collectorsByPort {
+		go serveMetrics(collectors, portNum)
 	}
 
 	runtime.Goexit() // don't exit main; keep running web server
