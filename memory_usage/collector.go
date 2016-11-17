@@ -31,6 +31,7 @@ var REGEXP_TO_GROUP_MAPPINGS = []RegexpAndGroup{
 	{regexp.MustCompile(`^[^ ]*remote_syslog`), "remote_syslog"},
 	{regexp.MustCompile(`^[^ ]*rsyslogd`), "rsyslogd"},
 	{regexp.MustCompile(`^[^ ]*unicorn`), "unicorn"},
+	{regexp.MustCompile(`^[^ ]*update-apt-xapi`), "update-apt-xapi"},
 	{regexp.MustCompile(`/var/www/vocabincontext/golang/backend`), "vocabincontext"},
 }
 
