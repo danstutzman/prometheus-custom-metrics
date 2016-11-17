@@ -89,6 +89,7 @@ EOF2
     fi
 
     sudo service prometheus-custom-metrics stop || true
+    rm -rf /home/prometheus-custom-metrics/conf
     sudo -u prometheus-custom-metrics cp -rv ./prometheus-custom-metrics ./conf /home/prometheus-custom-metrics
     sudo service prometheus-custom-metrics start
     curl -f http://localhost:9102/metrics >/dev/null
