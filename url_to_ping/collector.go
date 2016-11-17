@@ -9,8 +9,8 @@ import (
 )
 
 type UrlToPingCollector struct {
-	options     Options
-	pop3Creds   Pop3Creds
+	options     *Options
+	pop3Creds   *Pop3Creds
 	desc        *prometheus.Desc
 	numRequests int
 }
@@ -46,7 +46,7 @@ func (collector *UrlToPingCollector) Collect(ch chan<- prometheus.Metric) {
 	)
 }
 
-func NewUrlToPingCollector(options Options, pop3Creds Pop3Creds) *UrlToPingCollector {
+func NewUrlToPingCollector(options *Options, pop3Creds *Pop3Creds) *UrlToPingCollector {
 	return &UrlToPingCollector{
 		options:   options,
 		pop3Creds: pop3Creds,

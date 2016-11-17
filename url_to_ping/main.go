@@ -12,8 +12,7 @@ type Pop3Creds struct {
 	Password string
 }
 
-func Main(options Options) {
-
+func Main(options *Options) {
 	var jsonBytes []byte
 	var err error
 	if jsonBytes, err = ioutil.ReadFile(options.Pop3CredsJson); err != nil {
@@ -28,6 +27,6 @@ func Main(options Options) {
 		log.Fatalf("Missing Password in %s", options.Pop3CredsJson)
 	}
 
-	collector := NewUrlToPingCollector(options, pop3Creds)
+	collector := NewUrlToPingCollector(options, &pop3Creds)
 	prometheus.MustRegister(collector)
 }

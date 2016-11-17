@@ -1,7 +1,7 @@
 package cloudfront_logs
 
 import (
-	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
+	"fmt"
 )
 
 type Options struct {
@@ -22,39 +22,22 @@ func Usage() string {
 	}`
 }
 
-func HandleOptions(section map[string]interface{}, path string,
-	usagef func(string, ...interface{})) *Options {
-
-	options := Options{}
-	for key, value := range section {
-		switch key {
-		case "S3CredsPath":
-			options.S3CredsPath = json_value.ToString(value, path+".S3CredsPath", usagef)
-		case "S3Region":
-			options.S3Region = json_value.ToString(value, path+".S3Region", usagef)
-		case "S3BucketName":
-			options.S3BucketName = json_value.ToString(value, path+".S3BucketName", usagef)
-		case "GcloudPemPath":
-			options.GcloudPemPath = json_value.ToString(value, path+".GcloudPemPath", usagef)
-		case "GcloudProjectId":
-			options.GcloudProjectId = json_value.ToString(value, path+".GcloudProjectId",
-				usagef)
-		default:
-			usagef("Unknown key %s.%s", path, key)
-		}
+func validateOptions(options *Options) error {
 	}
-
 	if options.S3CredsPath == "" {
-		usagef("Missing %s.S3CredsPath", path)
-	} else if options.S3Region == "" {
-		usagef("Missing %s.S3Region", path)
-	} else if options.S3BucketName == "" {
-		usagef("Missing %s.S3BucketName", path)
-	} else if options.GcloudPemPath == "" {
-		usagef("Missing %s.GcloudPemPath", path)
-	} else if options.GcloudProjectId == "" {
-		usagef("Missing %s.GcloudProjectId", path)
+		return fmt.Errorf("Missing options.S3CredsPath")
 	}
-
-	return &options
+	if options.S3Region == "" {
+		return fmt.Errorf("Missing options.S3Region")
+	}
+	if options.S3BucketName == "" {
+		return fmt.Errorf("Missing options.S3BucketName")
+	}
+	if options.GcloudPemPath == "" {
+		return fmt.Errorf("Missing options.GcloudPemPath")
+	}
+	if options.GcloudProjectId == "" {
+		return fmt.Errorf("Missing options.GcloudProjectId")
+	}
+	return nil
 }

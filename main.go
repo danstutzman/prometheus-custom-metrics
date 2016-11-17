@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
-	"github.com/danielstutzman/prometheus-custom-metrics/json_value"
 	"github.com/danielstutzman/prometheus-custom-metrics/memory_usage"
 	"github.com/danielstutzman/prometheus-custom-metrics/piwik_exporter"
 	"github.com/danielstutzman/prometheus-custom-metrics/security_updates"
@@ -37,40 +36,6 @@ func usagef(format string, args ...interface{}) {
 	log.Fatalf(format, args...)
 }
 
-func handleOptions(optionsMap map[string]interface{}) Options {
-	options := Options{}
-
-	for key, value := range optionsMap {
-		switch key {
-		case "PortNum":
-			options.PortNum = json_value.ToInt(value, "Options.PortNum", usagef)
-		case "CloudfrontLogs":
-			options.CloudfrontLogs = cloudfront_logs.HandleOptions(
-				json_value.ToMap(value, "Options.CloudfrontLogs", usagef),
-				"Options.CloudfrontLogs", usagef)
-		case "MemoryUsage":
-			options.MemoryUsage = json_value.ToBool(value, "Options.MemoryUsage", usagef)
-		case "PiwikExporter":
-			options.PiwikExporter = json_value.ToBool(value, "Options.PiwikExporter", usagef)
-		case "SecurityUpdates":
-			options.SecurityUpdates =
-				json_value.ToBool(value, "Options.SecurityUpdates", usagef)
-		case "UrlToPing":
-			options.UrlToPing = url_to_ping.HandleOptions(
-				json_value.ToMap(value, "Options.UrlToPing", usagef),
-				"Options.UrlToPing", usagef)
-		default:
-			usagef("Unknown key \"%s\" in options", key)
-		}
-	}
-
-	if options.PortNum == 0 {
-		usagef("Missing Options.PortNum")
-	}
-
-	return options
-}
-
 func serveMetrics(portNum int) {
 	http.Handle("/metrics", prometheus.Handler())
 	err := http.ListenAndServe(fmt.Sprintf(":%d", portNum), nil)
@@ -87,11 +52,10 @@ func main() {
 		usagef("You must supply only one command line argument")
 	}
 
-	optionsMap := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(os.Args[1]), &optionsMap); err != nil {
+	options := Options{}
+	if err := json.Unmarshal([]byte(os.Args[1]), &options); err != nil {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
-	options := handleOptions(optionsMap)
 
 	go serveMetrics(options.PortNum)
 
@@ -105,10 +69,10 @@ func main() {
 		security_updates.Main()
 	}
 	if options.UrlToPing != nil {
-		url_to_ping.Main(*options.UrlToPing)
+		url_to_ping.Main(options.UrlToPing)
 	}
 	if options.CloudfrontLogs != nil { // Run last since it's slow
-		cloudfront_logs.Main(*options.CloudfrontLogs)
+		cloudfront_logs.Main(options.CloudfrontLogs)
 	}
 
 	runtime.Goexit() // don't exit main; keep running web server
