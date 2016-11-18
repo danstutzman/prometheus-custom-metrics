@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/cenkalti/backoff"
 	"log"
 	"strings"
 )
@@ -41,21 +42,21 @@ func NewS3Connection(credsPath, region, bucketName string) *S3Connection {
 }
 
 func (conn *S3Connection) ListPaths() []string {
-	paths := []string{}
 	log.Printf("Listing objects in s3://%s...", conn.bucketName)
-	response, err := conn.service.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(conn.bucketName),
-		//		ContinuationToken: aws.String("Token"),
-		//		Delimiter:         aws.String("Delimiter"),
-		//		EncodingType:      aws.String("EncodingType"),
-		//		FetchOwner:        aws.Bool(true),
-		//		MaxKeys:           aws.Int64(1),
-		//		Prefix:            aws.String("Prefix"),
-		//		StartAfter:        aws.String("StartAfter"),
-	})
+
+	var response *s3.ListObjectsV2Output
+	var err error
+	err = backoff.Retry(func() error {
+		response, err = conn.service.ListObjectsV2(&s3.ListObjectsV2Input{
+			Bucket: aws.String(conn.bucketName),
+		})
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		log.Fatal(fmt.Errorf("Couldn't ListObjectsV2: %s", err))
 	}
+
+	paths := []string{}
 	for _, object := range response.Contents {
 		paths = append(paths, *object.Key)
 	}
@@ -64,12 +65,18 @@ func (conn *S3Connection) ListPaths() []string {
 
 func (conn *S3Connection) DownloadVisitsForPath(path string) []map[string]string {
 	log.Printf("Downloading %s...", path)
-	response, err := conn.service.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(conn.bucketName),
-		Key:    aws.String(path),
-	})
+
+	var response *s3.GetObjectOutput
+	var err error
+	err = backoff.Retry(func() error {
+		response, err = conn.service.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(conn.bucketName),
+			Key:    aws.String(path),
+		})
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("Couldn't GetObjet: %s", err))
 	}
 
 	reader, err := gzip.NewReader(response.Body)
@@ -103,7 +110,7 @@ func (conn *S3Connection) DownloadVisitsForPath(path string) []map[string]string
 		visits = append(visits, visit)
 	}
 	if err := scanner.Err(); err != nil {
-		panic(err)
+		panic(fmt.Errorf("Error from scanner.Err: %s", err))
 	}
 
 	return visits
@@ -111,11 +118,15 @@ func (conn *S3Connection) DownloadVisitsForPath(path string) []map[string]string
 
 func (conn *S3Connection) DeletePath(path string) {
 	log.Printf("Deleting %s", path)
-	_, err := conn.service.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(conn.bucketName),
-		Key:    aws.String(path),
-	})
+
+	err := backoff.Retry(func() error {
+		_, err := conn.service.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String(conn.bucketName),
+			Key:    aws.String(path),
+		})
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("Couldn't DeleteObject: %s", err))
 	}
 }
