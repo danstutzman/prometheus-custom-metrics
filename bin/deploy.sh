@@ -79,7 +79,7 @@ EOF2
     else
       tee /etc/init/prometheus-custom-metrics.conf <<EOF2
         chdir /home/prometheus-custom-metrics
-        start on filesystem
+        start on started remote_syslog
         setuid prometheus-custom-metrics
         setgid prometheus-custom-metrics
         respawn
