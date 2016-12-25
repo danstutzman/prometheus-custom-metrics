@@ -101,5 +101,6 @@ EOF2
     curl -f http://localhost:9102/metrics >/dev/null
 
     sudo ufw allow from `dig +short monitoring.danstutzman.com` to any port 9102
+    sudo ufw allow from `dig +short monitoring.danstutzman.com` to any port 9103
 EOF
 done
