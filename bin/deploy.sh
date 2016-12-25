@@ -55,8 +55,8 @@ EOF
         script
           ./prometheus-custom-metrics '{
             "MemoryUsage": { "MetricsPort": 9102 },
-            "SecurityUpdates": { "MetricsPort": 9102 },
 
+            "SecurityUpdates": { "MetricsPort": 9103 },
             "CloudfrontLogs": {
               "MetricsPort": 9103,
               "S3CredsPath": "conf/s3.creds.ini",
@@ -87,7 +87,7 @@ EOF2
         script
           ./prometheus-custom-metrics '{
             "MemoryUsage": { "MetricsPort": 9102 },
-            "SecurityUpdates": { "MetricsPort": 9102 }
+            "SecurityUpdates": { "MetricsPort": 9103 }
           }'
         end script
 EOF2
