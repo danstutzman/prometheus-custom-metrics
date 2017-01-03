@@ -30,7 +30,7 @@ for INSTANCE in basicruby monitoring vocabincontext; do
 EOF
   chmod 0400 conf/*
   cp $GOPATH/bin/prometheus-custom-metrics .
-  time rsync -a -e "ssh -C" -r . root@$INSTANCE.danstutzman.com:/home/prometheus-custom-metrics/gopath/src/github.com/danielstutzman/prometheus-custom-metrics --include='*.go' --include='s3.creds.ini' --include='Speech-ba6281533dc8.json' --include='pop3.creds.json' --include='*/' --exclude='*' --prune-empty-dirs
+  time rsync -a -e "ssh -C" -r . root@$INSTANCE.danstutzman.com:/home/prometheus-custom-metrics/gopath/src/github.com/danielstutzman/prometheus-custom-metrics --include='*.go' --include='s3.creds.ini' --include='Speech-ba6281533dc8.json' --include='pop3.creds.json' --include='papertrail_api_token.txt' --include='*/' --exclude='*' --prune-empty-dirs
   rm ./prometheus-custom-metrics
   ssh root@$INSTANCE.danstutzman.com <<"EOF"
     set -ex
@@ -64,6 +64,10 @@ EOF
               "S3BucketName": "cloudfront-logs-danstutzman",
               "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
               "GcloudProjectId": "speech-danstutzman"
+            },
+            "PapertrailUsage": {
+              "ApiTokenPath": "conf/papertrail_api_token.txt",
+              "MetricsPort": 9103
             },
             "PiwikExporter": { "MetricsPort": 9103 },
             "UrlToPing": {

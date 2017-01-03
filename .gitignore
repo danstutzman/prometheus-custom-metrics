@@ -3,3 +3,4 @@
 /conf/s3.accesskey.json
 /conf/s3.creds.ini
 /conf/pop3.creds.json
+/conf/papertrail_api_token.txt
