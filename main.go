@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/memory_usage"
+	"github.com/danielstutzman/prometheus-custom-metrics/papertrail_usage"
 	"github.com/danielstutzman/prometheus-custom-metrics/piwik_exporter"
 	"github.com/danielstutzman/prometheus-custom-metrics/security_updates"
 	"github.com/danielstutzman/prometheus-custom-metrics/url_to_ping"
@@ -20,6 +21,7 @@ import (
 type Options struct {
 	CloudfrontLogs  *cloudfront_logs.Options
 	MemoryUsage     *memory_usage.Options
+	PapertrailUsage *papertrail_usage.Options
 	PiwikExporter   *piwik_exporter.Options
 	SecurityUpdates *security_updates.Options
 	UrlToPing       *url_to_ping.Options
@@ -29,11 +31,13 @@ func usagef(format string, args ...interface{}) {
 	log.Printf(`Usage: %s '{"PortNum":INT,  Port number to run web server on
   	"CloudfrontLogs": %s,
 		"MemoryUsage": %s,
+		"PapertrailUsage": %s,
 		"PiwikExporter": %s,
 		"SecurityUpdates": %s,
 		"UrlToPing": %s
 	}`, os.Args[0], cloudfront_logs.Usage(), memory_usage.Usage(),
-		piwik_exporter.Usage(), security_updates.Usage(), url_to_ping.Usage())
+		papertrail_usage.Usage(), piwik_exporter.Usage(), security_updates.Usage(),
+		url_to_ping.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -95,6 +99,11 @@ func main() {
 		addCollector(
 			memory_usage.MakeCollector(options.MemoryUsage),
 			options.MemoryUsage.MetricsPort)
+	}
+	if options.PapertrailUsage != nil {
+		addCollector(
+			papertrail_usage.MakeCollector(options.PapertrailUsage),
+			options.PapertrailUsage.MetricsPort)
 	}
 	if options.PiwikExporter != nil {
 		addCollector(
