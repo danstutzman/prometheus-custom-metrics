@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/danielstutzman/prometheus-custom-metrics/billing_gcloud"
 	"github.com/danielstutzman/prometheus-custom-metrics/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/memory_usage"
 	"github.com/danielstutzman/prometheus-custom-metrics/papertrail_usage"
@@ -19,6 +20,7 @@ import (
 )
 
 type Options struct {
+	BillingGcloud   *billing_gcloud.Options
 	CloudfrontLogs  *cloudfront_logs.Options
 	MemoryUsage     *memory_usage.Options
 	PapertrailUsage *papertrail_usage.Options
@@ -29,15 +31,16 @@ type Options struct {
 
 func usagef(format string, args ...interface{}) {
 	log.Printf(`Usage: %s '{"PortNum":INT,  Port number to run web server on
+  	"BillingGcloud": %s,
   	"CloudfrontLogs": %s,
 		"MemoryUsage": %s,
 		"PapertrailUsage": %s,
 		"PiwikExporter": %s,
 		"SecurityUpdates": %s,
 		"UrlToPing": %s
-	}`, os.Args[0], cloudfront_logs.Usage(), memory_usage.Usage(),
-		papertrail_usage.Usage(), piwik_exporter.Usage(), security_updates.Usage(),
-		url_to_ping.Usage())
+	}`, os.Args[0], billing_gcloud.Usage(), cloudfront_logs.Usage(),
+		memory_usage.Usage(), papertrail_usage.Usage(), piwik_exporter.Usage(),
+		security_updates.Usage(), url_to_ping.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -90,6 +93,10 @@ func main() {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
 
+	if options.BillingGcloud != nil {
+		collector := billing_gcloud.MakeCollector(options.BillingGcloud)
+		addCollector(collector, options.BillingGcloud.MetricsPort)
+	}
 	if options.CloudfrontLogs != nil {
 		collector := cloudfront_logs.MakeCollector(options.CloudfrontLogs)
 		addCollector(collector, options.CloudfrontLogs.MetricsPort)
