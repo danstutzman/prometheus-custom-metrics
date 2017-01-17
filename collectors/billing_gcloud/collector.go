@@ -1,13 +1,13 @@
 package billing_gcloud
 
 import (
-	"github.com/danielstutzman/prometheus-custom-metrics/storage"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type BillingGcloudCollector struct {
 	options  *Options
-	bigquery *storage.BigqueryConnection
+	bigquery *bigquery.BigqueryConnection
 	desc     *prometheus.Desc
 }
 
@@ -28,7 +28,7 @@ func (collector *BillingGcloudCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func NewBillingGcloudCollector(options *Options,
-	bigquery *storage.BigqueryConnection) *BillingGcloudCollector {
+	bigquery *bigquery.BigqueryConnection) *BillingGcloudCollector {
 
 	return &BillingGcloudCollector{
 		options:  options,
