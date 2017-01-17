@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 cd $GOPATH/src/github.com/danielstutzman/prometheus-custom-metrics
 
-go install
+go install -race
 go vet .
 
 for INSTANCE in basicruby monitoring vocabincontext; do
@@ -35,14 +35,14 @@ EOF
   ssh root@$INSTANCE.danstutzman.com <<"EOF"
     set -ex
 
-    if [ `uname -p` == i686 ];     then ARCH=386
-    elif [ `uname -p` == x86_64 ]; then ARCH=amd64; fi
+    if [ `uname -p` == i686 ];     then ARCH=386; RACE=""
+    elif [ `uname -p` == x86_64 ]; then ARCH=amd64; RACE="-race"; fi
 
     GOROOT=/home/prometheus-custom-metrics/go1.7.3.linux-$ARCH
     GOPATH=/home/prometheus-custom-metrics/gopath
     cd $GOPATH/src/github.com/danielstutzman/prometheus-custom-metrics
     chown -R prometheus-custom-metrics:prometheus-custom-metrics .
-    time sudo -u prometheus-custom-metrics GOPATH=$GOPATH GOROOT=$GOROOT $GOROOT/bin/go install
+    time sudo -u prometheus-custom-metrics GOPATH=$GOPATH GOROOT=$GOROOT $GOROOT/bin/go install $RACE
 
     if [ `hostname -s` == monitoring ]; then
       tee /etc/init/prometheus-custom-metrics.conf <<EOF2
