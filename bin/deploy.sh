@@ -109,6 +109,7 @@ EOF2
     sudo -u prometheus-custom-metrics cp -rv $GOPATH/bin/prometheus-custom-metrics ./conf \
       /home/prometheus-custom-metrics
     sudo service prometheus-custom-metrics start
+    sleep 1
     curl -f http://localhost:9102/metrics >/dev/null
 
     sudo ufw allow from `dig +short monitoring.danstutzman.com` to any port 9102
