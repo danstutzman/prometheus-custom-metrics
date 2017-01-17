@@ -2,112 +2,17 @@ package cloudfront_logs
 
 import (
 	"fmt"
-	"github.com/cenkalti/backoff"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
+	"github.com/danielstutzman/prometheus-custom-metrics/util"
 	bigquery "google.golang.org/api/bigquery/v2"
-	"io/ioutil"
-	"log"
 	"regexp"
-	"strconv"
-	"time"
 )
 
 var S3_PATH_REGEXP = regexp.MustCompile(
 	`^([A-Z0-9]+)\.([0-9]{4})-([0-9]{2})-([0-9]{2})-([0-9]{2}).([0-9a-f]{8}).gz$`)
 
-type BigqueryConnection struct {
-	projectId string
-	datasetId string
-	service   *bigquery.Service
-}
-
 type SiteNameStatus struct {
 	SiteName string
 	Status   string
-}
-
-func atoi(s string) int {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		panic(err)
-	}
-	return i
-}
-
-func parseFloat64(s string) float64 {
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
-
-func NewBigqueryConnection(pemPath, projectId, datasetId string) *BigqueryConnection {
-	pemKeyBytes, err := ioutil.ReadFile(pemPath)
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("Obtaining OAuth2 token...")
-	token, err := google.JWTConfigFromJSON(pemKeyBytes, bigquery.BigqueryScope)
-	client := token.Client(oauth2.NoContext)
-
-	service, err := bigquery.New(client)
-	if err != nil {
-		panic(err)
-	}
-
-	return &BigqueryConnection{
-		projectId: projectId,
-		datasetId: datasetId,
-		service:   service,
-	}
-}
-
-func (conn *BigqueryConnection) createVisitsTable() {
-	log.Printf("Creating visits table first...")
-	_, err := conn.service.Tables.Insert(conn.projectId, conn.datasetId,
-		&bigquery.Table{
-			Schema: &bigquery.TableSchema{
-				Fields: []*bigquery.TableFieldSchema{
-					{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
-					{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "c_ip", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_method", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "sc_status", Type: "INTEGER", Mode: "REQUIRED"},
-					{Name: "cs_referer", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "x_host_header", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "time_taken", Type: "FLOAT", Mode: "REQUIRED"},
-					{Name: "x_forwarded_for", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "cs_protocol", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "x_edge_response_result_type", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
-					{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "x_edge_result_type", Type: "STRING", Mode: "REQUIRED"},
-					{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
-					{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
-					{Name: "cs_protocol_version", Type: "STRING", Mode: "NULLABLE"},
-				},
-			},
-			TableReference: &bigquery.TableReference{
-				DatasetId: conn.datasetId,
-				ProjectId: conn.projectId,
-				TableId:   "visits",
-			},
-		}).Do()
-	if err != nil {
-		panic(err)
-	}
-
-	log.Printf("Waiting 30 seconds for BigQuery to catch up...")
-	time.Sleep(30 * time.Second)
 }
 
 func maybeNull(s string) bigquery.JsonValue {
@@ -120,10 +25,36 @@ func maybeNull(s string) bigquery.JsonValue {
 	}
 }
 
-func (conn *BigqueryConnection) UploadVisits(s3Path string,
-	visits []map[string]string) {
+func createVisitsTable(conn *util.BigqueryConnection) {
+	conn.CreateTable("visits", []*bigquery.TableFieldSchema{
+		{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
+		{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "c_ip", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_method", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "sc_status", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "cs_referer", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_host_header", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "time_taken", Type: "FLOAT", Mode: "REQUIRED"},
+		{Name: "x_forwarded_for", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "cs_protocol", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_edge_response_result_type", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_edge_result_type", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "cs_protocol_version", Type: "STRING", Mode: "NULLABLE"},
+	})
+}
 
-	log.Printf("Inserting rows for %s...", s3Path)
+func UploadVisits(conn *util.BigqueryConnection, s3Path string,
+	visits []map[string]string) {
 
 	rows := make([]*bigquery.TableDataInsertAllRequestRows, 0)
 	for _, visit := range visits {
@@ -154,45 +85,14 @@ func (conn *BigqueryConnection) UploadVisits(s3Path string,
 				"ssl_protocol":                maybeNull(visit["ssl-protocol"]),
 				"ssl_cipher":                  maybeNull(visit["ssl-cipher"]),
 				"cs_protocol_version":         maybeNull(visit["cs-protocol-version"]),
-			},
-		}
+			}}
 		rows = append(rows, row)
 	}
 
-	var err error
-	err = backoff.Retry(func() error {
-		_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
-			"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
-		return err
-	}, backoff.NewExponentialBackOff())
-	if err != nil {
-		panic(err)
-	}
-
-	if err != nil {
-		log.Println(err)
-		if err.Error() == fmt.Sprintf(
-			"googleapi: Error 404: Not found: Table %s:%s.visits, notFound",
-			conn.projectId, conn.datasetId) {
-
-			conn.createVisitsTable()
-
-			// Now retry the insert
-			err = backoff.Retry(func() error {
-				_, err := conn.service.Tabledata.InsertAll(conn.projectId, conn.datasetId,
-					"visits", &bigquery.TableDataInsertAllRequest{Rows: rows}).Do()
-				return err
-			}, backoff.NewExponentialBackOff())
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			panic(err)
-		}
-	}
+	conn.InsertRows("visits", func() { createVisitsTable(conn) }, rows)
 }
 
-func RollUpExactStatus(exactStatus int) string {
+func rollUpExactStatus(exactStatus int) string {
 	switch {
 	case exactStatus == 200:
 		return "200"
@@ -205,64 +105,44 @@ func RollUpExactStatus(exactStatus int) string {
 	}
 }
 
-func (conn *BigqueryConnection) QuerySiteNameStatusToNumVisits() map[SiteNameStatus]int {
-	log.Printf("Querying site name * status to num visits...")
+func QuerySiteNameStatusToNumVisits(conn *util.BigqueryConnection) map[SiteNameStatus]int {
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
-	        sc_status AS exact_status,
-					COUNT(*) AS num_visits,
-        FROM %s.visits
-        GROUP BY site_name, exact_status`, conn.datasetId)
+			sc_status AS exact_status,
+			COUNT(*) AS num_visits
+		FROM %s.visits
+		GROUP BY site_name, exact_status`, conn.DatasetId())
 
-	var response *bigquery.QueryResponse
-	var err error
-	err = backoff.Retry(func() error {
-		response, err = conn.service.Jobs.Query(conn.projectId,
-			&bigquery.QueryRequest{Query: sql}).Do()
-		return err
-	}, backoff.NewExponentialBackOff())
-	if err != nil {
-		panic(err)
-	}
+	rows := conn.Query(sql, "site name * status to num visits")
 
 	siteNameStatusToNumVisits := map[SiteNameStatus]int{}
-	for _, row := range response.Rows {
+	for _, row := range rows {
 		siteName := row.F[0].V.(string)
-		exactStatus := atoi(row.F[1].V.(string))
-		numVisits := atoi(row.F[2].V.(string))
-		status := RollUpExactStatus(exactStatus)
+		exactStatus := util.Atoi(row.F[1].V.(string))
+		numVisits := util.Atoi(row.F[2].V.(string))
+		status := rollUpExactStatus(exactStatus)
 		siteNameStatusToNumVisits[SiteNameStatus{siteName, status}] += numVisits
 	}
 	return siteNameStatusToNumVisits
 }
 
 // Returns _sum and _count
-func (conn *BigqueryConnection) QuerySiteNameToRequestSeconds() (map[string]float64,
+func QuerySiteNameToRequestSeconds(conn *util.BigqueryConnection) (map[string]float64,
 	map[string]int) {
 
-	log.Printf("Querying site name to request seconds...")
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
-	        SUM(time_taken) AS sum_time_taken,
-					COUNT(*) AS num_visits
-        FROM %s.visits
-        GROUP BY site_name`, conn.datasetId)
+			SUM(time_taken) AS sum_time_taken,
+			COUNT(*) AS num_visits
+		FROM %s.visits
+		GROUP BY site_name`, conn.DatasetId())
 
-	var response *bigquery.QueryResponse
-	var err error
-	err = backoff.Retry(func() error {
-		response, err = conn.service.Jobs.Query(conn.projectId,
-			&bigquery.QueryRequest{Query: sql}).Do()
-		return err
-	}, backoff.NewExponentialBackOff())
-	if err != nil {
-		panic(err)
-	}
+	rows := conn.Query(sql, "site name to request seconds")
 
 	siteNameToRequestSecondsSum := map[string]float64{}
 	siteNameToRequestSecondsCount := map[string]int{}
-	for _, row := range response.Rows {
+	for _, row := range rows {
 		siteName := row.F[0].V.(string)
-		sumTimeTaken := parseFloat64(row.F[1].V.(string))
-		numVisits := atoi(row.F[2].V.(string))
+		sumTimeTaken := util.ParseFloat64(row.F[1].V.(string))
+		numVisits := util.Atoi(row.F[2].V.(string))
 		siteNameToRequestSecondsSum[siteName] = sumTimeTaken
 		siteNameToRequestSecondsCount[siteName] = numVisits
 	}

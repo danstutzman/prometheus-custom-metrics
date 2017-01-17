@@ -1,12 +1,13 @@
 package billing_gcloud
 
 import (
+	"github.com/danielstutzman/prometheus-custom-metrics/util"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type BillingGcloudCollector struct {
 	options  *Options
-	bigquery *BigqueryConnection
+	bigquery *util.BigqueryConnection
 	desc     *prometheus.Desc
 }
 
@@ -15,7 +16,7 @@ func (collector *BillingGcloudCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *BillingGcloudCollector) Collect(ch chan<- prometheus.Metric) {
-	productToSumCost := collector.bigquery.QueryProductToSumCost()
+	productToSumCost := QueryProductToSumCost(collector.bigquery)
 	for product, sumCost := range productToSumCost {
 		ch <- prometheus.MustNewConstMetric(
 			collector.desc,
@@ -26,7 +27,9 @@ func (collector *BillingGcloudCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func NewBillingGcloudCollector(options *Options, bigquery *BigqueryConnection) *BillingGcloudCollector {
+func NewBillingGcloudCollector(options *Options,
+	bigquery *util.BigqueryConnection) *BillingGcloudCollector {
+
 	return &BillingGcloudCollector{
 		options:  options,
 		bigquery: bigquery,

@@ -1,11 +1,12 @@
 package cloudfront_logs
 
 import (
+	"github.com/danielstutzman/prometheus-custom-metrics/util"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type CloudfrontCollector struct {
-	bigquery                          *BigqueryConnection
+	bigquery                          *util.BigqueryConnection
 	s3                                *S3Connection
 	siteNameStatusToNumVisits         map[SiteNameStatus]int
 	siteNameStatusToNumVisitsDesc     *prometheus.Desc
@@ -17,10 +18,10 @@ type CloudfrontCollector struct {
 
 func (collector *CloudfrontCollector) InitFromBigqueryAndS3() {
 	collector.siteNameStatusToNumVisits =
-		collector.bigquery.QuerySiteNameStatusToNumVisits()
+		QuerySiteNameStatusToNumVisits(collector.bigquery)
 	collector.siteNameToRequestSecondsSum,
 		collector.siteNameToRequestSecondsCount =
-		collector.bigquery.QuerySiteNameToRequestSeconds()
+		QuerySiteNameToRequestSeconds(collector.bigquery)
 	collector.syncNewCloudfrontLogsToBigquery()
 }
 
@@ -34,15 +35,15 @@ func (collector *CloudfrontCollector) syncNewCloudfrontLogsToBigquery() {
 				siteName := visit["x-host-header"]
 				siteNameStatus := SiteNameStatus{
 					siteName,
-					RollUpExactStatus(atoi(visit["sc-status"])),
+					rollUpExactStatus(util.Atoi(visit["sc-status"])),
 				}
 				collector.siteNameStatusToNumVisits[siteNameStatus] += 1
 
 				collector.siteNameToRequestSecondsSum[siteName] +=
-					parseFloat64(visit["time-taken"])
+					util.ParseFloat64(visit["time-taken"])
 				collector.siteNameToRequestSecondsCount[siteName] += 1
 			}
-			collector.bigquery.UploadVisits(s3Path, visits)
+			UploadVisits(collector.bigquery, s3Path, visits)
 			collector.s3.DeletePath(s3Path)
 			<-sem
 		}(s3Path)
@@ -86,7 +87,7 @@ func (collector *CloudfrontCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 func NewCloudfrontCollector(s3 *S3Connection,
-	bigquery *BigqueryConnection) *CloudfrontCollector {
+	bigquery *util.BigqueryConnection) *CloudfrontCollector {
 
 	return &CloudfrontCollector{
 		s3:       s3,
