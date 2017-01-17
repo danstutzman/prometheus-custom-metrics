@@ -54,36 +54,38 @@ EOF
         respawn limit 2 60
         script
           ./prometheus-custom-metrics '{
-            "MemoryUsage": { "MetricsPort": 9102 },
+            "Collectors": {
+              "MemoryUsage": { "MetricsPort": 9102 },
 
-            "CloudfrontLogs": {
-              "MetricsPort": 9103,
-              "S3CredsPath": "conf/s3.creds.ini",
-              "S3Region": "us-east-1",
-              "S3BucketName": "cloudfront-logs-danstutzman",
-              "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-              "GcloudProjectId": "speech-danstutzman"
-            },
-            "PapertrailUsage": {
-              "ApiTokenPath": "conf/papertrail_api_token.txt",
-              "MetricsPort": 9103
-            },
-            "SecurityUpdates": { "MetricsPort": 9103 },
-            "UrlToPing": {
-              "MetricsPort": 9103,
-              "Pop3CredsJson": "conf/pop3.creds.json",
-              "EmailMaxAgeInMins": 60,
-              "EmailSubject": "[FIRING:1] FakeAlertToVerifyEndToEnd",
-              "SuccessUrl": "https://nosnch.in/480f8a1fa3"
-            },
+              "CloudfrontLogs": {
+                "MetricsPort": 9103,
+                "S3CredsPath": "conf/s3.creds.ini",
+                "S3Region": "us-east-1",
+                "S3BucketName": "cloudfront-logs-danstutzman",
+                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
+                "GcloudProjectId": "speech-danstutzman"
+              },
+              "PapertrailUsage": {
+                "ApiTokenPath": "conf/papertrail_api_token.txt",
+                "MetricsPort": 9103
+              },
+              "SecurityUpdates": { "MetricsPort": 9103 },
+              "UrlToPing": {
+                "MetricsPort": 9103,
+                "Pop3CredsJson": "conf/pop3.creds.json",
+                "EmailMaxAgeInMins": 60,
+                "EmailSubject": "[FIRING:1] FakeAlertToVerifyEndToEnd",
+                "SuccessUrl": "https://nosnch.in/480f8a1fa3"
+              },
 
-            "BillingGcloud": {
-              "MetricsPort": 9104,
-              "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-              "GcloudProjectId": "speech-danstutzman",
-              "GcloudDatasetName": "billing_export"
-            },
-            "PiwikExporter": { "MetricsPort": 9104 }
+              "BillingGcloud": {
+                "MetricsPort": 9104,
+                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
+                "GcloudProjectId": "speech-danstutzman",
+                "GcloudDatasetName": "billing_export"
+              },
+              "PiwikExporter": { "MetricsPort": 9104 }
+            }
           }'
           end script
 EOF2
@@ -97,8 +99,10 @@ EOF2
         respawn limit 2 60
         script
           ./prometheus-custom-metrics '{
-            "MemoryUsage": { "MetricsPort": 9102 },
-            "SecurityUpdates": { "MetricsPort": 9103 }
+            "Collectors": {
+              "MemoryUsage": { "MetricsPort": 9102 },
+              "SecurityUpdates": { "MetricsPort": 9103 }
+            }
           }'
         end script
 EOF2

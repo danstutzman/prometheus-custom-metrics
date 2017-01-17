@@ -1,4 +1,4 @@
-package piwik_exporter
+package memory_usage
 
 import (
 	"log"
@@ -10,12 +10,12 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-	  "MetricsPort":     INT     port to serve metrics on, e.g. 9102
-	}`
+      "MetricsPort":     INT     port to serve metrics on, e.g. 9102
+    }`
 }
 
 func validateOptions(options *Options) {
 	if options.MetricsPort == 0 {
-		log.Fatalf("Missing piwik_exporter.MetricsPort")
+		log.Fatalf("Missing memory_usage.MetricsPort")
 	}
 }

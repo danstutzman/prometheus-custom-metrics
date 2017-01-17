@@ -14,9 +14,9 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-	   "ApiTokenPath": STRING   text file containing Papertrail API token
-     "MetricsPort":  INT      port to serve metrics on, e.g. 9102
-	}`
+      "ApiTokenPath": STRING   text file containing Papertrail API token
+      "MetricsPort":  INT      port to serve metrics on, e.g. 9102
+    }`
 }
 
 func validateOptions(options *Options) {

@@ -13,12 +13,12 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-     "MetricsPort":       INT      port to serve metrics on, e.g. 9102
-     "GcloudPemPath":     STRING,  path to Google credentials in JSON format,
-		                                 e.g. "./Speech-ba6281533dc8.json"
-     "GcloudProjectId":   STRING   Project number or project ID
-     "GcloudDatasetName": STRING   Name of dataset
-	}`
+      "MetricsPort":       INT      port to serve metrics on, e.g. 9102
+      "GcloudPemPath":     STRING,  path to Google credentials in JSON format,
+		                                  e.g. "./Speech-ba6281533dc8.json"
+      "GcloudProjectId":   STRING   Project number or project ID
+      "GcloudDatasetName": STRING   Name of dataset
+    }`
 }
 
 func validateOptions(options *Options) {

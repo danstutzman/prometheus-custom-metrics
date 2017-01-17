@@ -1,4 +1,4 @@
-package security_updates
+package piwik_exporter
 
 import (
 	"log"
@@ -10,12 +10,12 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-  	"MetricsPort":       INT     port to run web server on, e.g. 9102
-	}`
+      "MetricsPort":     INT     port to serve metrics on, e.g. 9102
+    }`
 }
 
 func validateOptions(options *Options) {
 	if options.MetricsPort == 0 {
-		log.Fatalf("Missing security_updates.MetricsPort")
+		log.Fatalf("Missing piwik_exporter.MetricsPort")
 	}
 }
