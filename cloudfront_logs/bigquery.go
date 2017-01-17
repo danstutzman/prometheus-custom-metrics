@@ -2,7 +2,7 @@ package cloudfront_logs
 
 import (
 	"fmt"
-	"github.com/danielstutzman/prometheus-custom-metrics/util"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage"
 	bigquery "google.golang.org/api/bigquery/v2"
 	"regexp"
 )
@@ -25,7 +25,7 @@ func maybeNull(s string) bigquery.JsonValue {
 	}
 }
 
-func createVisitsTable(conn *util.BigqueryConnection) {
+func createVisitsTable(conn *storage.BigqueryConnection) {
 	conn.CreateTable("visits", []*bigquery.TableFieldSchema{
 		{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
 		{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
@@ -53,7 +53,7 @@ func createVisitsTable(conn *util.BigqueryConnection) {
 	})
 }
 
-func UploadVisits(conn *util.BigqueryConnection, s3Path string,
+func UploadVisits(conn *storage.BigqueryConnection, s3Path string,
 	visits []map[string]string) {
 
 	rows := make([]*bigquery.TableDataInsertAllRequestRows, 0)
@@ -105,7 +105,7 @@ func rollUpExactStatus(exactStatus int) string {
 	}
 }
 
-func QuerySiteNameStatusToNumVisits(conn *util.BigqueryConnection) map[SiteNameStatus]int {
+func QuerySiteNameStatusToNumVisits(conn *storage.BigqueryConnection) map[SiteNameStatus]int {
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
 			sc_status AS exact_status,
 			COUNT(*) AS num_visits
@@ -117,8 +117,8 @@ func QuerySiteNameStatusToNumVisits(conn *util.BigqueryConnection) map[SiteNameS
 	siteNameStatusToNumVisits := map[SiteNameStatus]int{}
 	for _, row := range rows {
 		siteName := row.F[0].V.(string)
-		exactStatus := util.Atoi(row.F[1].V.(string))
-		numVisits := util.Atoi(row.F[2].V.(string))
+		exactStatus := storage.Atoi(row.F[1].V.(string))
+		numVisits := storage.Atoi(row.F[2].V.(string))
 		status := rollUpExactStatus(exactStatus)
 		siteNameStatusToNumVisits[SiteNameStatus{siteName, status}] += numVisits
 	}
@@ -126,7 +126,7 @@ func QuerySiteNameStatusToNumVisits(conn *util.BigqueryConnection) map[SiteNameS
 }
 
 // Returns _sum and _count
-func QuerySiteNameToRequestSeconds(conn *util.BigqueryConnection) (map[string]float64,
+func QuerySiteNameToRequestSeconds(conn *storage.BigqueryConnection) (map[string]float64,
 	map[string]int) {
 
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
@@ -141,8 +141,8 @@ func QuerySiteNameToRequestSeconds(conn *util.BigqueryConnection) (map[string]fl
 	siteNameToRequestSecondsCount := map[string]int{}
 	for _, row := range rows {
 		siteName := row.F[0].V.(string)
-		sumTimeTaken := util.ParseFloat64(row.F[1].V.(string))
-		numVisits := util.Atoi(row.F[2].V.(string))
+		sumTimeTaken := storage.ParseFloat64(row.F[1].V.(string))
+		numVisits := storage.Atoi(row.F[2].V.(string))
 		siteNameToRequestSecondsSum[siteName] = sumTimeTaken
 		siteNameToRequestSecondsCount[siteName] = numVisits
 	}

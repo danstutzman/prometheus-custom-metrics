@@ -2,7 +2,7 @@ package billing_gcloud
 
 import (
 	"fmt"
-	"github.com/danielstutzman/prometheus-custom-metrics/util"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage"
 	"strings"
 )
 
@@ -24,7 +24,7 @@ func RollUpProduct(googleProduct string, resourceType string) string {
 	}
 }
 
-func QueryProductToSumCost(conn *util.BigqueryConnection) map[string]float64 {
+func QueryProductToSumCost(conn *storage.BigqueryConnection) map[string]float64 {
 	sql := `SELECT 
 		  product,
   		resource_type,
@@ -40,7 +40,7 @@ func QueryProductToSumCost(conn *util.BigqueryConnection) map[string]float64 {
 	for _, row := range rows {
 		googleProduct := row.F[0].V.(string)
 		resourceType := row.F[1].V.(string)
-		sumCost := util.ParseFloat64(row.F[2].V.(string))
+		sumCost := storage.ParseFloat64(row.F[2].V.(string))
 		product := RollUpProduct(googleProduct, resourceType)
 		productToSumCost[product] = sumCost
 	}
