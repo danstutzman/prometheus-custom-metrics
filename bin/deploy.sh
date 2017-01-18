@@ -55,22 +55,22 @@ EOF
         script
           ./prometheus-custom-metrics '{
             "Collectors": {
-              "MemoryUsage": { "MetricsPort": 9102 },
+              "MemoryUsage": {
+                "MetricsPort": 9102
+              },
 
               "CloudfrontLogs": {
                 "MetricsPort": 9103,
                 "S3CredsPath": "conf/s3.creds.ini",
                 "S3Region": "us-east-1",
                 "S3BucketName": "cloudfront-logs-danstutzman",
-                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-                "GcloudProjectId": "speech-danstutzman"
-              },
-              "PapertrailUsage": {
+                "BigqueryDataset": "cloudfront_logs"
+              }, "PapertrailUsage": {
                 "ApiTokenPath": "conf/papertrail_api_token.txt",
                 "MetricsPort": 9103
-              },
-              "SecurityUpdates": { "MetricsPort": 9103 },
-              "UrlToPing": {
+              }, "SecurityUpdates": {
+                "MetricsPort": 9103
+              }, "UrlToPing": {
                 "MetricsPort": 9103,
                 "Pop3CredsJson": "conf/pop3.creds.json",
                 "EmailMaxAgeInMins": 60,
@@ -80,11 +80,15 @@ EOF
 
               "BillingGcloud": {
                 "MetricsPort": 9104,
+                "BigqueryDataset": "billing_export"
+              }, "PiwikExporter": {
+                "MetricsPort": 9104
+              }
+            }, "Storage": {
+              "Bigquery": {
                 "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-                "GcloudProjectId": "speech-danstutzman",
-                "GcloudDatasetName": "billing_export"
-              },
-              "PiwikExporter": { "MetricsPort": 9104 }
+                "GcloudProjectId": "speech-danstutzman"
+              }
             }
           }'
           end script

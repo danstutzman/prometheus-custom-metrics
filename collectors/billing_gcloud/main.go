@@ -5,10 +5,13 @@ import (
 	"log"
 )
 
-func MakeCollector(options *Options) *BillingGcloudCollector {
+func MakeCollector(options *Options,
+	bigqueryConn *bigquery.BigqueryConnection) *BillingGcloudCollector {
+
 	validateOptions(options)
-	bigquery := bigquery.NewBigqueryConnection(options.GcloudPemPath,
-		options.GcloudProjectId, options.GcloudDatasetName)
-	log.Printf("Created bigquery connection")
-	return NewBillingGcloudCollector(options, bigquery)
+	if bigqueryConn == nil {
+		log.Fatalf("Missing Bigquery configuration")
+	}
+
+	return NewBillingGcloudCollector(options, bigqueryConn)
 }

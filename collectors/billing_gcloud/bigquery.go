@@ -24,12 +24,14 @@ func RollUpProduct(googleProduct string, resourceType string) string {
 	}
 }
 
-func QueryProductToSumCost(conn *bigquery.BigqueryConnection) map[string]float64 {
+func QueryProductToSumCost(conn *bigquery.BigqueryConnection,
+	dataset string) map[string]float64 {
+
 	sql := `SELECT 
 		  product,
   		resource_type,
 		SUM(cost) AS sum_cost
-		FROM ` + fmt.Sprintf("`%s.gcp_billing_export_*`", conn.DatasetId()) + `
+		FROM ` + fmt.Sprintf("`%s.gcp_billing_export_*`", dataset) + `
 		WHERE currency = 'USD'
 		GROUP BY product, resource_type
 		HAVING sum_cost >= 0.01`

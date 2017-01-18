@@ -9,6 +9,7 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/piwik_exporter"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/security_updates"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/url_to_ping"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -52,15 +53,15 @@ func Usage() string {
 	)
 }
 
-func Setup(opts *Options) CollectorsByPort {
+func Setup(opts *Options, bigqueryConn *bigquery.BigqueryConnection) CollectorsByPort {
 	collectorsByPort := NewCollectorsByPort()
 	add := collectorsByPort.addCollector
 	if opts.BillingGcloud != nil {
-		collector := billing_gcloud.MakeCollector(opts.BillingGcloud)
+		collector := billing_gcloud.MakeCollector(opts.BillingGcloud, bigqueryConn)
 		add(collector, opts.BillingGcloud.MetricsPort)
 	}
 	if opts.CloudfrontLogs != nil {
-		collector := cloudfront_logs.MakeCollector(opts.CloudfrontLogs)
+		collector := cloudfront_logs.MakeCollector(opts.CloudfrontLogs, bigqueryConn)
 		add(collector, opts.CloudfrontLogs.MetricsPort)
 		go collector.InitFromBigqueryAndS3() // run in the background since it's slow
 	}

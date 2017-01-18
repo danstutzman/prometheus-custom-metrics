@@ -9,8 +9,7 @@ type Options struct {
 	S3CredsPath     string
 	S3Region        string
 	S3BucketName    string
-	GcloudPemPath   string
-	GcloudProjectId string
+	BigqueryDataset string
 }
 
 func Usage() string {
@@ -19,8 +18,7 @@ func Usage() string {
       "S3CredsPath":     STRING,  path to AWS credentials file, e.g. "./s3.creds.ini"
       "S3Region":        STRING,  AWS region for S3, e.g. "us-east-1"
       "S3BucketName":    STRING,  Name of S3 bucket, e.g. "cloudfront-logs-danstutzman"
-      "GcloudPemPath":   STRING,  path to Google credentials in JSON format, e.g. "./Speech-ba6281533dc8.json"
-      "GcloudProjectId": STRING   Project number or project ID
+			"BigqueryDataset": STRING,  Name of BigQuery dataset, e.g. "cloudfront_logs"
     }`
 }
 
@@ -37,10 +35,7 @@ func validateOptions(options *Options) {
 	if options.S3BucketName == "" {
 		log.Fatalf("Missing cloudfront_logs.S3BucketName")
 	}
-	if options.GcloudPemPath == "" {
-		log.Fatalf("Missing cloudfront_logs.GcloudPemPath")
-	}
-	if options.GcloudProjectId == "" {
-		log.Fatalf("Missing cloudfront_logs.GcloudProjectId")
+	if options.BigqueryDataset == "" {
+		log.Fatalf("Missing cloudfront_logs.BigqueryDataset")
 	}
 }

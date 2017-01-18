@@ -5,33 +5,22 @@ import (
 )
 
 type Options struct {
-	MetricsPort       int
-	GcloudPemPath     string
-	GcloudProjectId   string
-	GcloudDatasetName string
+	MetricsPort     int
+	BigqueryDataset string
 }
 
 func Usage() string {
 	return `{ (optional)
-      "MetricsPort":       INT      port to serve metrics on, e.g. 9102
-      "GcloudPemPath":     STRING,  path to Google credentials in JSON format,
-		                                  e.g. "./Speech-ba6281533dc8.json"
-      "GcloudProjectId":   STRING   Project number or project ID
-      "GcloudDatasetName": STRING   Name of dataset
+      "MetricsPort":     INT      port to serve metrics on, e.g. 9102
+      "BigqueryDataset": STRING   Name of dataset
     }`
 }
 
 func validateOptions(options *Options) {
 	if options.MetricsPort == 0 {
-		log.Fatalf("Missing memory_usage.MetricsPort")
+		log.Fatalf("Missing billing_gcloud.MetricsPort")
 	}
-	if options.GcloudPemPath == "" {
-		log.Fatalf("Missing cloudfront_logs.GcloudPemPath")
-	}
-	if options.GcloudProjectId == "" {
-		log.Fatalf("Missing cloudfront_logs.GcloudProjectId")
-	}
-	if options.GcloudDatasetName == "" {
-		log.Fatalf("Missing cloudfront_logs.GcloudDatasetName")
+	if options.BigqueryDataset == "" {
+		log.Fatalf("Missing billing_gcloud.BigqueryDataset")
 	}
 }

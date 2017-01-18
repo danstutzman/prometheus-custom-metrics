@@ -25,8 +25,8 @@ func maybeNull(s string) bigquery.JsonValue {
 	}
 }
 
-func createVisitsTable(conn *mybigquery.BigqueryConnection) {
-	conn.CreateTable("visits", []*bigquery.TableFieldSchema{
+func createVisitsTable(conn *mybigquery.BigqueryConnection, dataset string) {
+	conn.CreateTable(dataset, "visits", []*bigquery.TableFieldSchema{
 		{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
 		{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
 		{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
@@ -53,7 +53,7 @@ func createVisitsTable(conn *mybigquery.BigqueryConnection) {
 	})
 }
 
-func UploadVisits(conn *mybigquery.BigqueryConnection, s3Path string,
+func UploadVisits(conn *mybigquery.BigqueryConnection, dataset string, s3Path string,
 	visits []map[string]string) {
 
 	rows := make([]*bigquery.TableDataInsertAllRequestRows, 0)
@@ -89,7 +89,7 @@ func UploadVisits(conn *mybigquery.BigqueryConnection, s3Path string,
 		rows = append(rows, row)
 	}
 
-	conn.InsertRows("visits", func() { createVisitsTable(conn) }, rows)
+	conn.InsertRows(dataset, "visits", func() { createVisitsTable(conn, dataset) }, rows)
 }
 
 func rollUpExactStatus(exactStatus int) string {
@@ -105,12 +105,14 @@ func rollUpExactStatus(exactStatus int) string {
 	}
 }
 
-func QuerySiteNameStatusToNumVisits(conn *mybigquery.BigqueryConnection) map[SiteNameStatus]int {
+func QuerySiteNameStatusToNumVisits(conn *mybigquery.BigqueryConnection,
+	dataset string) map[SiteNameStatus]int {
+
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
 			sc_status AS exact_status,
 			COUNT(*) AS num_visits
 		FROM %s.visits
-		GROUP BY site_name, exact_status`, conn.DatasetId())
+		GROUP BY site_name, exact_status`, dataset)
 
 	rows := conn.Query(sql, "site name * status to num visits")
 
@@ -126,14 +128,14 @@ func QuerySiteNameStatusToNumVisits(conn *mybigquery.BigqueryConnection) map[Sit
 }
 
 // Returns _sum and _count
-func QuerySiteNameToRequestSeconds(conn *mybigquery.BigqueryConnection) (map[string]float64,
-	map[string]int) {
+func QuerySiteNameToRequestSeconds(conn *mybigquery.BigqueryConnection,
+	dataset string) (map[string]float64, map[string]int) {
 
 	sql := fmt.Sprintf(`SELECT x_host_header AS site_name,
 			SUM(time_taken) AS sum_time_taken,
 			COUNT(*) AS num_visits
 		FROM %s.visits
-		GROUP BY site_name`, conn.DatasetId())
+		GROUP BY site_name`, dataset)
 
 	rows := conn.Query(sql, "site name to request seconds")
 

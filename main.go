@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
@@ -15,12 +17,13 @@ import (
 
 type Options struct {
 	Collectors *collectors.Options
+	Storage    *storage.Options
 }
 
 func usagef(format string, args ...interface{}) {
 	log.Printf(`Usage: %s '{
-  "Collectors": %s
-}`, os.Args[0], collectors.Usage())
+  "Collectors": %s, "Storage": %s
+}`, os.Args[0], collectors.Usage(), storage.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -58,10 +61,15 @@ func main() {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
 
+	var bigqueryConn *bigquery.BigqueryConnection
+	if options.Storage != nil {
+		bigqueryConn = storage.Setup(options.Storage)
+	}
+
 	if options.Collectors == nil {
 		usagef("Missing options.Collectors")
 	}
-	collectorsByPort := collectors.Setup(options.Collectors)
+	collectorsByPort := collectors.Setup(options.Collectors, bigqueryConn)
 	if len(collectorsByPort) == 0 {
 		log.Fatalf("No collectors were set up")
 	}
