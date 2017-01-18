@@ -2,6 +2,7 @@ package cloudfront_logs
 
 import (
 	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/s3"
 	"log"
 )
 
@@ -13,7 +14,7 @@ func MakeCollector(options *Options,
 		log.Fatalf("Missing Bigquery configuration")
 	}
 
-	s3 := NewS3Connection(options.S3CredsPath, options.S3Region, options.S3BucketName)
+	s3 := s3.NewS3Connection(options.S3CredsPath, options.S3Region, options.S3BucketName)
 	collector := NewCloudfrontCollector(options, s3, bigqueryConn)
 	return collector
 }

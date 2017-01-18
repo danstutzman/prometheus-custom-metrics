@@ -2,13 +2,14 @@ package cloudfront_logs
 
 import (
 	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/s3"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type CloudfrontCollector struct {
 	options                           *Options
 	bigquery                          *bigquery.BigqueryConnection
-	s3                                *S3Connection
+	s3                                *s3.S3Connection
 	siteNameStatusToNumVisits         map[SiteNameStatus]int
 	siteNameStatusToNumVisitsDesc     *prometheus.Desc
 	siteNameToRequestSecondsSum       map[string]float64
@@ -31,7 +32,7 @@ func (collector *CloudfrontCollector) syncNewCloudfrontLogsToBigquery() {
 	for _, s3Path := range collector.s3.ListPaths() {
 		sem <- true
 		go func(s3Path string) {
-			visits := collector.s3.DownloadVisitsForPath(s3Path)
+			visits := collector.downloadVisitsForPath(s3Path)
 			for _, visit := range visits {
 				siteName := visit["x-host-header"]
 				siteNameStatus := SiteNameStatus{
@@ -87,7 +88,7 @@ func (collector *CloudfrontCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func NewCloudfrontCollector(options *Options, s3 *S3Connection,
+func NewCloudfrontCollector(options *Options, s3 *s3.S3Connection,
 	bigquery *bigquery.BigqueryConnection) *CloudfrontCollector {
 
 	return &CloudfrontCollector{
