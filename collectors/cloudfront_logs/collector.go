@@ -18,13 +18,10 @@ type CloudfrontCollector struct {
 }
 
 func (collector *CloudfrontCollector) InitFromBigqueryAndS3() {
-	collector.siteNameStatusToNumVisits =
-		QuerySiteNameStatusToNumVisits(collector.bigquery,
-			collector.options.BigqueryDataset)
+	collector.siteNameStatusToNumVisits = collector.querySiteNameStatusToNumVisits()
 
 	collector.siteNameToRequestSecondsSum, collector.siteNameToRequestSecondsCount =
-		QuerySiteNameToRequestSeconds(collector.bigquery,
-			collector.options.BigqueryDataset)
+		collector.querySiteNameToRequestSeconds()
 
 	collector.syncNewCloudfrontLogsToBigquery()
 }
@@ -47,8 +44,7 @@ func (collector *CloudfrontCollector) syncNewCloudfrontLogsToBigquery() {
 					bigquery.ParseFloat64(visit["time-taken"])
 				collector.siteNameToRequestSecondsCount[siteName] += 1
 			}
-			UploadVisits(collector.bigquery, collector.options.BigqueryDataset, s3Path,
-				visits)
+			collector.uploadVisits(s3Path, visits)
 			collector.s3.DeletePath(s3Path)
 			<-sem
 		}(s3Path)

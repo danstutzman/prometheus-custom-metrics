@@ -16,8 +16,7 @@ func (collector *BillingGcloudCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *BillingGcloudCollector) Collect(ch chan<- prometheus.Metric) {
-	productToSumCost := QueryProductToSumCost(collector.bigquery,
-		collector.options.BigqueryDataset)
+	productToSumCost := collector.queryProductToSumCost()
 	for product, sumCost := range productToSumCost {
 		ch <- prometheus.MustNewConstMetric(
 			collector.desc,
