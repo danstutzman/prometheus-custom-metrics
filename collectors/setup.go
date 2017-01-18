@@ -40,8 +40,8 @@ func (collectorsByPort CollectorsByPort) addCollector(collector prometheus.Colle
 
 func Usage() string {
 	return fmt.Sprintf(`{
-    "BillingGcloud": %s, "CloudfrontLogs": %s, "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
-  }`,
+  "BillingGcloud": %s, "CloudfrontLogs": %s, "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
+}`,
 		billing_gcloud.Usage(),
 		cloudfront_logs.Usage(),
 		memory_usage.Usage(),

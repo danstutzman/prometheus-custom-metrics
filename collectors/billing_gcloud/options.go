@@ -12,9 +12,9 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-	    "Bigquery": ` + bigquery.Usage() +
+    "Bigquery": ` + bigquery.Usage() +
 		`, MetricsPort":     INT      port to serve metrics on, e.g. 9102
-    }`
+  }`
 }
 
 func validateOptions(options *Options) {

@@ -14,9 +14,9 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-	    "S3": ` + s3.Usage() + `, "BigQuery": ` + bigquery.Usage() +
+    "S3": ` + s3.Usage() + `, "BigQuery": ` + bigquery.Usage() +
 		`, "MetricsPort":     INT,     port to serve metrics on, e.g. 9102
-    }`
+  }`
 }
 
 func validateOptions(options *Options) {

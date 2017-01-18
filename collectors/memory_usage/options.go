@@ -10,8 +10,8 @@ type Options struct {
 
 func Usage() string {
 	return `{ (optional)
-      "MetricsPort":     INT     port to serve metrics on, e.g. 9102
-    }`
+    "MetricsPort":     INT     port to serve metrics on, e.g. 9102
+  }`
 }
 
 func validateOptions(options *Options) {

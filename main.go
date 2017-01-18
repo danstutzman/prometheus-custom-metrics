@@ -13,14 +13,8 @@ import (
 	"strings"
 )
 
-type Options struct {
-	Collectors *collectors.Options
-}
-
 func usagef(format string, args ...interface{}) {
-	log.Printf(`Usage: %s '{
-  "Collectors": %s
-}`, os.Args[0], collectors.Usage())
+	log.Printf(`Usage: %s '%s'`, os.Args[0], collectors.Usage())
 	log.Fatalf(format, args...)
 }
 
@@ -53,15 +47,12 @@ func main() {
 		usagef("You must supply only one command line argument")
 	}
 
-	options := Options{}
+	options := collectors.Options{}
 	if err := json.Unmarshal([]byte(os.Args[1]), &options); err != nil {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
 
-	if options.Collectors == nil {
-		usagef("Missing options.Collectors")
-	}
-	collectorsByPort := collectors.Setup(options.Collectors)
+	collectorsByPort := collectors.Setup(&options)
 	if len(collectorsByPort) == 0 {
 		log.Fatalf("No collectors were set up")
 	}
