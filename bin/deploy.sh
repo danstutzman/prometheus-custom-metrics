@@ -61,10 +61,15 @@ EOF
 
               "CloudfrontLogs": {
                 "MetricsPort": 9103,
-                "S3CredsPath": "conf/s3.creds.ini",
-                "S3Region": "us-east-1",
-                "S3BucketName": "cloudfront-logs-danstutzman",
-                "BigqueryDataset": "cloudfront_logs"
+                "S3": {
+                  "CredsPath": "conf/s3.creds.ini",
+                  "Region": "us-east-1",
+                  "BucketName": "cloudfront-logs-danstutzman"
+                }, "Bigquery": {
+                  "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
+                  "GcloudProjectId": "speech-danstutzman",
+                  "DatasetName": "cloudfront_logs"
+                }
               }, "PapertrailUsage": {
                 "ApiTokenPath": "conf/papertrail_api_token.txt",
                 "MetricsPort": 9103
@@ -80,14 +85,13 @@ EOF
 
               "BillingGcloud": {
                 "MetricsPort": 9104,
-                "BigqueryDataset": "billing_export"
+                "Bigquery": {
+                  "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
+                  "GcloudProjectId": "speech-danstutzman",
+                  "DatasetName": "billing_export"
+                }
               }, "PiwikExporter": {
                 "MetricsPort": 9104
-              }
-            }, "Storage": {
-              "Bigquery": {
-                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-                "GcloudProjectId": "speech-danstutzman"
               }
             }
           }'

@@ -2,16 +2,10 @@ package billing_gcloud
 
 import (
 	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
-	"log"
 )
 
-func MakeCollector(options *Options,
-	bigqueryConn *bigquery.BigqueryConnection) *BillingGcloudCollector {
-
+func MakeCollector(options *Options) *BillingGcloudCollector {
 	validateOptions(options)
-	if bigqueryConn == nil {
-		log.Fatalf("Missing Bigquery configuration")
-	}
-
+	bigqueryConn := bigquery.NewBigqueryConnection(&options.Bigquery)
 	return NewBillingGcloudCollector(options, bigqueryConn)
 }

@@ -1,26 +1,26 @@
 package billing_gcloud
 
 import (
+	"github.com/danielstutzman/prometheus-custom-metrics/storage/bigquery"
 	"log"
 )
 
 type Options struct {
-	MetricsPort     int
-	BigqueryDataset string
+	Bigquery    bigquery.Options
+	MetricsPort int
 }
 
 func Usage() string {
 	return `{ (optional)
-      "MetricsPort":     INT      port to serve metrics on, e.g. 9102
-      "BigqueryDataset": STRING   Name of dataset
+	    "Bigquery": ` + bigquery.Usage() +
+		`, MetricsPort":     INT      port to serve metrics on, e.g. 9102
     }`
 }
 
 func validateOptions(options *Options) {
+	bigquery.ValidateOptions(&options.Bigquery)
+
 	if options.MetricsPort == 0 {
 		log.Fatalf("Missing billing_gcloud.MetricsPort")
-	}
-	if options.BigqueryDataset == "" {
-		log.Fatalf("Missing billing_gcloud.BigqueryDataset")
 	}
 }

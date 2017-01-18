@@ -25,7 +25,7 @@ func RollUpProduct(googleProduct string, resourceType string) string {
 }
 
 func (collector *BillingGcloudCollector) queryProductToSumCost() map[string]float64 {
-	from := fmt.Sprintf("`%s.gcp_billing_export_*`", collector.options.BigqueryDataset)
+	from := fmt.Sprintf("`%s.gcp_billing_export_*`", collector.bigquery.DatasetName())
 	sql := `SELECT 
 		  product,
   		resource_type,

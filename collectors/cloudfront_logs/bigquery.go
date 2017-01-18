@@ -26,32 +26,31 @@ func maybeNull(s string) bigquery.JsonValue {
 }
 
 func (collector *CloudfrontCollector) createVisitsTable() {
-	collector.bigquery.CreateTable(collector.options.BigqueryDataset, "visits",
-		[]*bigquery.TableFieldSchema{
-			{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
-			{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "c_ip", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_method", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "sc_status", Type: "INTEGER", Mode: "REQUIRED"},
-			{Name: "cs_referer", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "x_host_header", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "time_taken", Type: "FLOAT", Mode: "REQUIRED"},
-			{Name: "x_forwarded_for", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "cs_protocol", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "x_edge_response_result_type", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
-			{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "x_edge_result_type", Type: "STRING", Mode: "REQUIRED"},
-			{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
-			{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
-			{Name: "cs_protocol_version", Type: "STRING", Mode: "NULLABLE"},
-		})
+	collector.bigquery.CreateTable("visits", []*bigquery.TableFieldSchema{
+		{Name: "s3_path", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "datetime", Type: "DATETIME", Mode: "REQUIRED"},
+		{Name: "x_edge_location", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "c_ip", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_method", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "sc_status", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "cs_referer", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_host_header", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "time_taken", Type: "FLOAT", Mode: "REQUIRED"},
+		{Name: "x_forwarded_for", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "cs_protocol", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_uri_stem", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_user_agent", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_uri_query", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_edge_response_result_type", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "sc_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "cs_host", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_cookie", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "x_edge_result_type", Type: "STRING", Mode: "REQUIRED"},
+		{Name: "cs_bytes", Type: "INTEGER", Mode: "REQUIRED"},
+		{Name: "ssl_protocol", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "ssl_cipher", Type: "STRING", Mode: "NULLABLE"},
+		{Name: "cs_protocol_version", Type: "STRING", Mode: "NULLABLE"},
+	})
 }
 
 func (collector *CloudfrontCollector) uploadVisits(s3Path string,
@@ -90,8 +89,8 @@ func (collector *CloudfrontCollector) uploadVisits(s3Path string,
 		rows = append(rows, row)
 	}
 
-	collector.bigquery.InsertRows(collector.options.BigqueryDataset, "visits",
-		func() { collector.createVisitsTable() }, rows)
+	collector.bigquery.InsertRows("visits", func() { collector.createVisitsTable() },
+		rows)
 }
 
 func rollUpExactStatus(exactStatus int) string {
@@ -113,7 +112,7 @@ func (collector *CloudfrontCollector) querySiteNameStatusToNumVisits() map[SiteN
 			sc_status AS exact_status,
 			COUNT(*) AS num_visits
 		FROM %s.visits
-		GROUP BY site_name, exact_status`, collector.options.BigqueryDataset)
+		GROUP BY site_name, exact_status`, collector.bigquery.DatasetName())
 
 	rows := collector.bigquery.Query(sql, "site name * status to num visits")
 
@@ -136,7 +135,7 @@ func (collector *CloudfrontCollector) querySiteNameToRequestSeconds() (
 			SUM(time_taken) AS sum_time_taken,
 			COUNT(*) AS num_visits
 		FROM %s.visits
-		GROUP BY site_name`, collector.options.BigqueryDataset)
+		GROUP BY site_name`, collector.bigquery.DatasetName())
 
 	rows := collector.bigquery.Query(sql, "site name to request seconds")
 

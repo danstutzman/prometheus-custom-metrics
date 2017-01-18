@@ -21,12 +21,12 @@ type S3Connection struct {
 	bucketName string
 }
 
-func NewS3Connection(credsPath, region, bucketName string) *S3Connection {
+func NewS3Connection(opts *Options) *S3Connection {
 	log.Printf("Creating AWS session...")
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config: aws.Config{
-			Credentials: credentials.NewSharedCredentials(credsPath, ""),
-			Region:      aws.String(region),
+			Credentials: credentials.NewSharedCredentials(opts.CredsPath, ""),
+			Region:      aws.String(opts.Region),
 		},
 	})
 	if err != nil {
@@ -35,7 +35,7 @@ func NewS3Connection(credsPath, region, bucketName string) *S3Connection {
 
 	return &S3Connection{
 		service:    s3.New(session),
-		bucketName: bucketName,
+		bucketName: opts.BucketName,
 	}
 }
 
