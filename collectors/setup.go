@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"fmt"
+	"github.com/danielstutzman/prometheus-custom-metrics/collectors/billing_aws"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/billing_gcloud"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/memory_usage"
@@ -13,6 +14,7 @@ import (
 )
 
 type Options struct {
+	BillingAws      *billing_aws.Options
 	BillingGcloud   *billing_gcloud.Options
 	CloudfrontLogs  *cloudfront_logs.Options
 	MemoryUsage     *memory_usage.Options
@@ -40,8 +42,9 @@ func (collectorsByPort CollectorsByPort) addCollector(collector prometheus.Colle
 
 func Usage() string {
 	return fmt.Sprintf(`{
-  "BillingGcloud": %s, "CloudfrontLogs": %s, "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
+  "BillingAws": %s, "BillingGcloud": %s, "CloudfrontLogs": %s, "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
 }`,
+		billing_aws.Usage(),
 		billing_gcloud.Usage(),
 		cloudfront_logs.Usage(),
 		memory_usage.Usage(),
@@ -55,6 +58,11 @@ func Usage() string {
 func Setup(opts *Options) CollectorsByPort {
 	collectorsByPort := NewCollectorsByPort()
 	add := collectorsByPort.addCollector
+
+	if opts.BillingAws != nil {
+		collector := billing_aws.MakeCollector(opts.BillingAws)
+		add(collector, opts.BillingAws.MetricsPort)
+	}
 	if opts.BillingGcloud != nil {
 		collector := billing_gcloud.MakeCollector(opts.BillingGcloud)
 		add(collector, opts.BillingGcloud.MetricsPort)
@@ -84,5 +92,6 @@ func Setup(opts *Options) CollectorsByPort {
 		add(url_to_ping.MakeCollector(opts.UrlToPing),
 			opts.UrlToPing.MetricsPort)
 	}
+
 	return collectorsByPort
 }
