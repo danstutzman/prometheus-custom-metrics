@@ -3,6 +3,7 @@ package s3
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -40,18 +41,33 @@ func NewS3Connection(opts *Options) *S3Connection {
 }
 
 func (conn *S3Connection) ListPaths() []string {
-	log.Printf("Listing objects in s3://%s...", conn.bucketName)
-
 	var response *s3.ListObjectsV2Output
 	var err error
+
 	err = backoff.Retry(func() error {
+		log.Printf("Listing objects in s3://%s...", conn.bucketName)
 		response, err = conn.service.ListObjectsV2(&s3.ListObjectsV2Input{
 			Bucket: aws.String(conn.bucketName),
 		})
+		if err != nil {
+			err2, isRequestFailure := err.(awserr.RequestFailure)
+			if !isRequestFailure {
+				log.Fatalf("Error from ListObjectsV2(Bucket=%s): %s", conn.bucketName, err)
+			} else if err2.StatusCode() == 500 || err2.StatusCode() == 503 {
+				// Let the backoff library retry
+			} else {
+				log.Fatalf("Error from ListObjectsV2(Bucket=%s): %s", conn.bucketName, err2)
+			}
+		}
 		return err
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		log.Fatal(fmt.Errorf("Couldn't ListObjectsV2: %s", err))
+		err2, isRequestFailure := err.(awserr.RequestFailure)
+		if !isRequestFailure {
+			log.Fatalf("Error from ListObjectsV2(Bucket=%s): %s", conn.bucketName, err)
+		} else {
+			log.Fatalf("Error from ListObjectsV2(Bucket=%s): %s", conn.bucketName, err2)
+		}
 	}
 
 	paths := []string{}
@@ -62,35 +78,74 @@ func (conn *S3Connection) ListPaths() []string {
 }
 
 func (conn *S3Connection) DownloadPath(path string) io.ReadCloser {
-	log.Printf("Downloading %s...", path)
-
 	var response *s3.GetObjectOutput
 	var err error
+
 	err = backoff.Retry(func() error {
+		log.Printf("Downloading %s...", path)
 		response, err = conn.service.GetObject(&s3.GetObjectInput{
 			Bucket: aws.String(conn.bucketName),
 			Key:    aws.String(path),
 		})
+		if err != nil {
+			err2, isRequestFailure := err.(awserr.RequestFailure)
+			if !isRequestFailure {
+				log.Fatalf("Error from GetObject(Bucket=%s,Key=%s): %s",
+					conn.bucketName, path, err)
+			} else if err2.StatusCode() == 500 || err2.StatusCode() == 503 {
+				// Let the backoff library retry
+			} else {
+				log.Fatalf("Error from GetObject(Bucket=%s,Key=%s): %s",
+					conn.bucketName, path, err2)
+			}
+		}
 		return err
 	}, backoff.NewExponentialBackOff())
+
 	if err != nil {
-		panic(fmt.Errorf("Couldn't GetObjet: %s", err))
+		err2, isRequestFailure := err.(awserr.RequestFailure)
+		if !isRequestFailure {
+			log.Fatalf("Error from GetObject(Bucket=%s,Key=%s): %s",
+				conn.bucketName, path, err)
+		} else {
+			log.Fatalf("Error from GetObject(Bucket=%s,Key=%s): %s",
+				conn.bucketName, path, err2)
+		}
 	}
 
 	return response.Body
 }
 
 func (conn *S3Connection) DeletePath(path string) {
-	log.Printf("Deleting %s", path)
-
 	err := backoff.Retry(func() error {
+		log.Printf("Deleting %s...", path)
 		_, err := conn.service.DeleteObject(&s3.DeleteObjectInput{
 			Bucket: aws.String(conn.bucketName),
 			Key:    aws.String(path),
 		})
+		if err != nil {
+			err2, isRequestFailure := err.(awserr.RequestFailure)
+			if !isRequestFailure {
+				log.Fatalf("Error from DeleteObject(Bucket=%s,Key=%s): %s",
+					conn.bucketName, path, err)
+			} else if err2.StatusCode() == 500 || err2.StatusCode() == 503 {
+				// Let the backoff library retry
+			} else {
+				log.Fatalf("Error from DeleteObject(Bucket=%s,Key=%s): %s",
+					conn.bucketName, path, err2)
+			}
+		}
 		return err
 	}, backoff.NewExponentialBackOff())
+
 	if err != nil {
-		panic(fmt.Errorf("Couldn't DeleteObject: %s", err))
+		err2, isRequestFailure := err.(awserr.RequestFailure)
+		if !isRequestFailure {
+			log.Fatalf("Error from DeleteObject(Bucket=%s,Key=%s): %s",
+				conn.bucketName, path, err)
+		} else {
+			log.Fatalf("Error from DeleteObject(Bucket=%s,Key=%s): %s",
+				conn.bucketName, path, err2)
+		}
 	}
 }

@@ -16,7 +16,6 @@ const EXPECTED_LINE2_V3 = EXPECTED_LINE2_V2 + " cs-protocol-version"
 func (collector *CloudfrontCollector) downloadVisitsForPath(
 	path string) []map[string]string {
 
-	log.Printf("Downloading %s...", path)
 	body := collector.s3.DownloadPath(path)
 	reader, err := gzip.NewReader(body)
 	if err != nil {
