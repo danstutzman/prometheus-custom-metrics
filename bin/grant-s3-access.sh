@@ -1,6 +1,5 @@
 #!/bin/bash -ex
 cd `dirname $0`/..
-BUCKET_NAME=cloudfront-logs-danstutzman
 
 if [ ! -e conf/s3.user.json ]; then
   echo "Creating conf/s3.user.json ..."
@@ -28,15 +27,15 @@ tee conf/policy.json <<EOF
     {
       "Effect": "Allow",
       "Action": ["s3:GetObject"],
-      "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+      "Resource": "arn:aws:s3:::cloudfront-logs-danstutzman/*"
     }, {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": "arn:aws:s3:::$BUCKET_NAME"
+      "Resource": "arn:aws:s3:::cloudfront-logs-danstutzman"
     }, {
       "Effect": "Allow",
       "Action": ["s3:DeleteObject"],
-      "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+      "Resource": "arn:aws:s3:::cloudfront-logs-danstutzman/*"
     }
   ]
 }
@@ -44,6 +43,30 @@ EOF
 
 aws iam put-user-policy --user-name prometheus-custom-metrics \
  --policy-name can-read-cloudfront-logs \
+ --policy-document file://conf/policy.json
+
+tee conf/policy.json <<EOF
+{
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "arn:aws:s3:::billing-danstutzman/*"
+    }, {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::billing-danstutzman"
+    }, {
+      "Effect": "Allow",
+      "Action": ["s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::billing-danstutzman/*"
+    }
+  ]
+}
+EOF
+
+aws iam put-user-policy --user-name prometheus-custom-metrics \
+ --policy-name can-read-billing \
  --policy-document file://conf/policy.json
 
 rm conf/policy.json
