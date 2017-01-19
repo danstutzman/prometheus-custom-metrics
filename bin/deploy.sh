@@ -82,6 +82,18 @@ EOF
               "SuccessUrl": "https://nosnch.in/480f8a1fa3"
             },
 
+            "BillingAws": {
+              "MetricsPort": 9104,
+              "Bigquery": {
+                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
+                "GcloudProjectId": "speech-danstutzman",
+                "DatasetName": "billing_export"
+              }, "S3": {
+                "CredsPath": "conf/s3.creds.ini",
+                "Region": "us-east-1",
+                "BucketName": "billing-danstutzman"
+              }
+            },
             "BillingGcloud": {
               "MetricsPort": 9104,
               "Bigquery": {

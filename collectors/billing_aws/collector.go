@@ -18,17 +18,15 @@ func (collector *BillingAwsCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (collector *BillingAwsCollector) Collect(ch chan<- prometheus.Metric) {
-	/*
-		productToSumCost := collector.queryProductToSumCost()
-		for product, sumCost := range productToSumCost {
-			ch <- prometheus.MustNewConstMetric(
-				collector.desc,
-				prometheus.CounterValue,
-				sumCost,
-				product,
-			)
-		}
-	*/
+	bucketNameToNumBytes := collector.downloadBucketNameToNumBytes()
+	for bucketName, numBytes := range bucketNameToNumBytes {
+		ch <- prometheus.MustNewConstMetric(
+			collector.desc,
+			prometheus.GaugeValue,
+			numBytes,
+			bucketName,
+		)
+	}
 }
 
 func NewBillingAwsCollector(options *Options,
@@ -40,9 +38,9 @@ func NewBillingAwsCollector(options *Options,
 		bigquery: bigqueryConn,
 		s3:       s3Conn,
 		desc: prometheus.NewDesc(
-			"billing_aws_sum_cost_usd",
-			"Total spent on AWS since enabled export",
-			[]string{"product"},
+			"billing_aws_s3_bucket_usage_bytes",
+			"Amazon Web Services S3 storage usage, by bucket, in bytes",
+			[]string{"bucket"},
 			prometheus.Labels{},
 		),
 	}
