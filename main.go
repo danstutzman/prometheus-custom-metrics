@@ -6,6 +6,7 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 	"log"
 	"net/http"
 	"os"
@@ -40,6 +41,8 @@ func serveMetrics(collectors []prometheus.Collector, portNum int) {
 }
 
 func main() {
+	log := logrus.New()
+
 	if len(os.Args) == 1 {
 		usagef("You must supply a command line argument")
 	}
@@ -52,7 +55,7 @@ func main() {
 		usagef("Error from json.Unmarshal of options: %v", err)
 	}
 
-	collectorsByPort := collectors.Setup(&options)
+	collectorsByPort := collectors.Setup(&options, log)
 	if len(collectorsByPort) == 0 {
 		log.Fatalf("No collectors were set up")
 	}

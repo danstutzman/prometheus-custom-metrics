@@ -3,6 +3,7 @@ package bigquery
 import (
 	"fmt"
 	"github.com/cenkalti/backoff"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	bigquery "google.golang.org/api/bigquery/v2"
@@ -14,6 +15,7 @@ import (
 )
 
 type BigqueryConnection struct {
+	log         *logrus.Logger
 	projectId   string
 	datasetName string
 	service     *bigquery.Service
@@ -39,22 +41,30 @@ func ParseFloat64(s string) float64 {
 	return f
 }
 
-func NewBigqueryConnection(opts *Options) *BigqueryConnection {
+func NewBigqueryConnection(opts *Options, log *logrus.Logger) *BigqueryConnection {
 	pemKeyBytes, err := ioutil.ReadFile(opts.GcloudPemPath)
 	if err != nil {
-		panic(err)
+		log.WithFields(logrus.Fields{"path": opts.GcloudPemPath, "error": err}).Panic(
+			"Error from ioutil.ReadFile")
 	}
 
-	log.Printf("Obtaining OAuth2 token...")
 	token, err := google.JWTConfigFromJSON(pemKeyBytes, bigquery.BigqueryScope)
+	if err != nil {
+		log.WithFields(logrus.Fields{"path": opts.GcloudPemPath, "error": err}).Panic(
+			"Error from google.JWTConfigFromJSON")
+	}
+	before := time.Now()
 	client := token.Client(oauth2.NoContext)
+	log.WithFields(logrus.Fields{"duration": time.Since(before)}).Info(
+		"obtained_oauth2_token")
 
 	service, err := bigquery.New(client)
 	if err != nil {
-		panic(err)
+		log.WithFields(logrus.Fields{"error": err}).Panic("Error from bigquery.New")
 	}
 
 	return &BigqueryConnection{
+		log:         log,
 		projectId:   opts.GcloudProjectId,
 		datasetName: opts.DatasetName,
 		service:     service,

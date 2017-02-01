@@ -11,6 +11,7 @@ import (
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/security_updates"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/url_to_ping"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type Options struct {
@@ -55,20 +56,20 @@ func Usage() string {
 	)
 }
 
-func Setup(opts *Options) CollectorsByPort {
+func Setup(opts *Options, log *logrus.Logger) CollectorsByPort {
 	collectorsByPort := NewCollectorsByPort()
 	add := collectorsByPort.addCollector
 
 	if opts.BillingAws != nil {
-		collector := billing_aws.MakeCollector(opts.BillingAws)
+		collector := billing_aws.MakeCollector(opts.BillingAws, log)
 		add(collector, opts.BillingAws.MetricsPort)
 	}
 	if opts.BillingGcloud != nil {
-		collector := billing_gcloud.MakeCollector(opts.BillingGcloud)
+		collector := billing_gcloud.MakeCollector(opts.BillingGcloud, log)
 		add(collector, opts.BillingGcloud.MetricsPort)
 	}
 	if opts.CloudfrontLogs != nil {
-		collector := cloudfront_logs.MakeCollector(opts.CloudfrontLogs)
+		collector := cloudfront_logs.MakeCollector(opts.CloudfrontLogs, log)
 		add(collector, opts.CloudfrontLogs.MetricsPort)
 		go collector.InitFromBigqueryAndS3() // run in the background since it's slow
 	}
