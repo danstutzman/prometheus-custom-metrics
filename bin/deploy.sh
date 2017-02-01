@@ -54,7 +54,9 @@ EOF
         respawn limit 2 60
         script
           ./prometheus-custom-metrics '{
-            "MemoryUsage": {
+            "Cpu": {
+              "MetricsPort": 9102
+            }, "MemoryUsage": {
               "MetricsPort": 9102
             },
 
