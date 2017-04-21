@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/billing_aws"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/billing_gcloud"
-	"github.com/danielstutzman/prometheus-custom-metrics/collectors/cloudfront_logs"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/cpu"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/memory_usage"
 	"github.com/danielstutzman/prometheus-custom-metrics/collectors/papertrail_usage"
@@ -18,7 +17,6 @@ import (
 type Options struct {
 	BillingAws      *billing_aws.Options
 	BillingGcloud   *billing_gcloud.Options
-	CloudfrontLogs  *cloudfront_logs.Options
 	Cpu             *cpu.Options
 	MemoryUsage     *memory_usage.Options
 	PapertrailUsage *papertrail_usage.Options
@@ -45,11 +43,10 @@ func (collectorsByPort CollectorsByPort) addCollector(collector prometheus.Colle
 
 func Usage() string {
 	return fmt.Sprintf(`{
-  "BillingAws": %s, "BillingGcloud": %s, "CloudfrontLogs": %s, "Cpu": "%s", "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
+  "BillingAws": %s, "BillingGcloud": %s, "Cpu": "%s", "MemoryUsage": %s, "PapertrailUsage": %s, "PiwikExporter": %s, "SecurityUpdates": %s, "UrlToPing": %s
 }`,
 		billing_aws.Usage(),
 		billing_gcloud.Usage(),
-		cloudfront_logs.Usage(),
 		cpu.Usage(),
 		memory_usage.Usage(),
 		papertrail_usage.Usage(),
@@ -70,11 +67,6 @@ func Setup(opts *Options, log *logrus.Logger) CollectorsByPort {
 	if opts.BillingGcloud != nil {
 		collector := billing_gcloud.MakeCollector(opts.BillingGcloud, log)
 		add(collector, opts.BillingGcloud.MetricsPort)
-	}
-	if opts.CloudfrontLogs != nil {
-		collector := cloudfront_logs.MakeCollector(opts.CloudfrontLogs, log)
-		add(collector, opts.CloudfrontLogs.MetricsPort)
-		go collector.InitFromBigqueryAndS3() // run in the background since it's slow
 	}
 	if opts.Cpu != nil {
 		collector := cpu.MakeCollector(opts.Cpu, log)

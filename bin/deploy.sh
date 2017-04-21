@@ -60,18 +60,7 @@ EOF
               "MetricsPort": 9102
             },
 
-            "CloudfrontLogs": {
-              "MetricsPort": 9103,
-              "S3": {
-                "CredsPath": "conf/s3.creds.ini",
-                "Region": "us-east-1",
-                "BucketName": "cloudfront-logs-danstutzman"
-              }, "Bigquery": {
-                "GcloudPemPath": "conf/Speech-ba6281533dc8.json",
-                "GcloudProjectId": "speech-danstutzman",
-                "DatasetName": "cloudfront_logs"
-              }
-            }, "PapertrailUsage": {
+            "PapertrailUsage": {
               "ApiTokenPath": "conf/papertrail_api_token.txt",
               "MetricsPort": 9103
             }, "SecurityUpdates": {
